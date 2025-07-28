@@ -26,27 +26,30 @@
 
 <script>
   const { Terminal } = window;
-const term = new Terminal({
-  cursorBlink: true,
-  scrollback: 5000,
-  fontSize: 14,
-  disableStdin: false, // we handle input manually
-  fontFamily: '"Consolas", "Courier New", monospace',
-  theme: {
-    background: '#0a0a0a',
-    foreground: '#00ff00',
-    cursor: '#00ff00',
-    selectionBackground: 'rgba(0, 255, 0, 0.3)'
-  }
-});
+  const term = new Terminal({
+    cursorBlink: true,
+    disableStdin: false,
+    scrollback: 5000,
+    fontSize: 14,
+    fontFamily: '"Consolas", "Courier New", monospace',
+    theme: {
+      background: '#0a0a0a',
+      foreground: '#00ff00',
+      cursor: '#00ff00',
+      selectionBackground: 'rgba(0, 255, 0, 0.3)'
+    }
+  });
 
   term.open(document.getElementById('terminal-container'));
 
   const PROMPT = '$ ';
   let commandBuffer = '';
+  let mode = "command"; // "command" or "edit"
+  let currentEditLines = [];
+  let currentEditFile = "";
 
   const files = {
-    'readme.txt': 'Welcome to Cyber Secrecy.\nCommands: ls, cat, edit, run.\nIn your scripts, use:\nprint(), scan(), probe(server), cameraStatus(server), hack(server)'
+    'readme.txt': 'Welcome to Cyber Secrecy.\nCommands: ls, cat, edit, run.\nIn scripts, try: print(), scan(), probe(), cameraStatus(), hack()'
   };
 
   const fakeServers = {
@@ -78,41 +81,12 @@ const term = new Terminal({
     print(filename in files ? files[filename] : `cat: no such file: ${filename}`);
   }
 
-  async function editFile(filename) {
+  function editFile(filename) {
     print(`Editing ${filename}. End with '.' on a line.`);
-    files[filename] = '';
-    return new Promise(resolve => {
-      let lines = [];
-      term.write('\r\n> ');
-      function onKey(e) {
-        const ev = e.domEvent;
-        if (ev.key === 'Enter') {
-          const line = commandBuffer.trimEnd();
-          commandBuffer = '';
-          term.write('\r\n');
-          if (line === '.') {
-            files[filename] = lines.join('\n');
-            print(`Saved ${filename}`);
-            term.offKey(onKey);
-            prompt();
-            resolve();
-          } else {
-            lines.push(line);
-            term.write('> ');
-          }
-        } else if (ev.key === 'Backspace') {
-          if (commandBuffer.length > 0) {
-            commandBuffer = commandBuffer.slice(0, -1);
-            term.write('\b \b');
-          }
-        } else if (ev.key.length === 1 && !ev.ctrlKey && !ev.altKey && !ev.metaKey) {
-          commandBuffer += ev.key;
-          term.write(ev.key);
-        }
-        scrollBottom();
-      }
-      term.onKey(onKey);
-    });
+    mode = "edit";
+    currentEditLines = [];
+    currentEditFile = filename;
+    term.write('\r\n> ');
   }
 
   function runFile(filename) {
@@ -204,17 +178,31 @@ const term = new Terminal({
     }
   }
 
-  term.write(PROMPT);
-  scrollBottom();
-
+  // SINGLE unified input handler (fixes double typing)
   term.onKey(e => {
     const ev = e.domEvent;
     const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
 
     if (ev.key === 'Enter') {
-      print('');
-      handleCommand(commandBuffer);
-      commandBuffer = '';
+      term.write('\r\n');
+      if (mode === "command") {
+        handleCommand(commandBuffer.trim());
+        commandBuffer = '';
+      } else if (mode === "edit") {
+        const line = commandBuffer.trimEnd();
+        commandBuffer = '';
+        if (line === '.') {
+          files[currentEditFile] = currentEditLines.join('\n');
+          print(`Saved ${currentEditFile}`);
+          mode = "command";
+          currentEditFile = "";
+          currentEditLines = [];
+          prompt();
+        } else {
+          currentEditLines.push(line);
+          term.write('> ');
+        }
+      }
     } else if (ev.key === 'Backspace') {
       if (commandBuffer.length > 0) {
         commandBuffer = commandBuffer.slice(0, -1);
@@ -224,8 +212,12 @@ const term = new Terminal({
       commandBuffer += ev.key;
       term.write(ev.key);
     }
+
     scrollBottom();
   });
+
+  term.write(PROMPT);
+  scrollBottom();
 </script>
 </body>
 </html>
