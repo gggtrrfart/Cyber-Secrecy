@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Cyber Secrecy - Sandbox Terminal</title>
+<!-- xterm.js CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    background-color: #0a0a0a;
+    color: #00ff00;
+    font-family: monospace;
+  }
+  #terminal-container {
+    height: 100vh;
+    width: 100vw;
+  }
+</style>
+</head>
+<body>
+<div id="terminal-container"></div>
+
+<!-- Load JS libraries -->
+<script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/js-interpreter@latest/interpreter.js"></script>
+
+<script>
+  // Setup terminal
+  const { Terminal } = window;
+  const term = new Terminal({
+    cursorBlink: true,
+    scrollback: 5000,
+    fontSize: 14,
+    fontFamily: '"Consolas", "Courier New", monospace',
+    theme: {
+      background: '#0a0a0a',
+      foreground: '#00ff00',
+      cursor: '#00ff00',
+      selectionBackground: 'rgba(0, 255, 0, 0.3)'
+    }
+  });
+  term.open(document.getElementById('terminal-container'));
+
+  // Variables
+  const PROMPT = '$ ';
+  let commandBuffer = '';
+
+  // Virtual file system
+  const files = {
+    'readme.txt': 'Welcome to Cyber Secrecy.\nType ls, cat, edit, run commands.\n',
+  };
+
+  // Helpers
+  function scrollBottom() {
+    setTimeout(() => term.scrollToBottom(), 0);
+  }
+
+  function prompt() {
+    term.write('\r\n' + PROMPT);
+    scrollBottom();
+  }
+
+  function print(text = '') {
+    term.writeln(text);
+    scrollBottom();
+  }
+
+  function listFiles() {
+    const names = Object.keys(files);
+    if (names.length === 0) {
+      print('(no files)');
+    } else {
+      print(names.join('  '));
+    }
+  }
+
+  function catFile(filename) {
+    if (filename in files) {
+      print(files[filename]);
+    } else {
+      print(`cat: no such file: ${filename}`);
+    }
+  }
+
+  // Edit file (multi-line input ending with a single dot '.')
+  async function editFile(filename) {
+    print(`Editing ${filename}. Type your content. End with single '.' on a line.`);
+    files[filename] = '';
+
+    return new Promise((resolve) => {
+      let lines = [];
+      term.write('\r\n> ');
+
+      function onKey(e) {
+        const ev = e.domEvent;
+        if (ev.key === 'Enter') {
+          const line = commandBuffer.trimEnd();
+          commandBuffer = '';
+          term.write('\r\n');
+
+          if (line === '.') {
+            files[filename] = lines.join('\n');
+            print(`Saved ${filename} (${lines.length} lines)`);
+            term.offKey(onKey);
+            prompt();
+            resolve();
+          } else {
+            lines.push(line);
+            term.write('> ');
+          }
+        } else if (ev.key === 'Backspace') {
+          if (commandBuffer.length > 0) {
+            commandBuffer = commandBuffer.slice(0, -1);
+            term.write('\b \b');
+          }
+        } else if (ev.key.length === 1 && !ev.ctrlKey && !ev.altKey && !ev.metaKey) {
+          commandBuffer += ev.key;
+          term.write(ev.key);
+        }
+        scrollBottom();
+      }
+
+      term.onKey(onKey);
+    });
+  }
+
+  // Sandbox run using JS-Interpreter
+  function runFile(filename) {
+    if (!(filename in files)) {
+      print(`run: no such file: ${filename}`);
+      prompt();
+      return;
+    }
+    print(`Running ${filename}...`);
+
+    try {
+      const interpreter = new Interpreter(files[filename], function(interpreter, globalObject) {
+        // No APIs exposed here = fully sandboxed
+      });
+
+      function runStep() {
+        if (interpreter.step()) {
+          setTimeout(runStep, 0);
+        } else {
+          print('Script finished.');
+          prompt();
+        }
+      }
+      runStep();
+    } catch (e) {
+      print('Error: ' + e.message);
+      prompt();
+    }
+  }
+
+  // Handle input commands
+  function handleCommand(line) {
+    const parts = line.trim().split(' ');
+    const cmd = parts[0];
+    const arg = parts.slice(1).join(' ');
+
+    switch (cmd) {
+      case 'ls':
+        listFiles();
+        prompt();
+        break;
+      case 'cat':
+        if (!arg) print('Usage: cat <filename>');
+        else catFile(arg);
+        prompt();
+        break;
+      case 'edit':
+        if (!arg) {
+          print('Usage: edit <filename>');
+          prompt();
+          break;
+        }
+        editFile(arg);
+        break;
+      case 'run':
+        if (!arg) print('Usage: run <filename>');
+        else runFile(arg);
+        break;
+      case '':
+        prompt();
+        break;
+      default:
+        print(`Unknown command: ${cmd}`);
+        prompt();
+    }
+  }
+
+  // Initialize prompt
+  term.write(PROMPT);
+  scrollBottom();
+
+  // Terminal input handling
+  term.onKey(e => {
+    const ev = e.domEvent;
+    const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
+
+    if (ev.key === 'Enter') {
+      print('');
+      handleCommand(commandBuffer);
+      commandBuffer = '';
+    } else if (ev.key === 'Backspace') {
+      if (commandBuffer.length > 0) {
+        commandBuffer = commandBuffer.slice(0, -1);
+        term.write('\b \b');
+      }
+    } else if (printable) {
+      commandBuffer += ev.key;
+      term.write(ev.key);
+    }
+    scrollBottom();
+  });
+</script>
+</body>
+</html>
