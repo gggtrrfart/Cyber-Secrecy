@@ -4,19 +4,39 @@
   <meta charset="UTF-8" />
   <title>Cyber Secrecy</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
-  <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      background-color: #0a0a0a;
-      color: #00ff00;
-      font-family: monospace;
-    }
-    #terminal-container {
-      height: 100vh;
-      width: 100vw;
-    }
-  </style>
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #000;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    overflow: hidden;
+  }
+
+  #terminal-container {
+    width: 100vw;
+    height: 100vh;
+    background: #050505;
+    color: #00ff00;
+  }
+
+  .xterm {
+    padding: 12px;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  ::selection {
+    background: rgba(0, 255, 0, 0.4);
+  }
+
+  ::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+  }
+</style>
+
 </head>
 <body>
 <div id="terminal-container"></div>
@@ -25,6 +45,22 @@
 <script src="https://cdn.jsdelivr.net/npm/js-interpreter@latest/interpreter.js"></script>
 
 <script>
+  const logo = `
+  ____            _               ____                     
+ / ___| ___ _ __ | |_ _   _ ___  / ___|  ___ __ _ _ __     
+| |   / _ \\ '_ \\| __| | | / __| \\___ \\ / __/ _\` | '_ \\    
+| |__|  __/ | | | |_| |_| \\__ \\  ___) | (_| (_| | | | |   
+ \\____\\___|_| |_|\\__|\\__,_|___/ |____/ \\___\\__,_|_| |_|   
+                                                          
+             Cyber Secrecy Terminal                        
+`;
+
+function showLogo() {
+  print(logo);
+  print(files['readme.txt']);
+  prompt();
+}
+
   const { Terminal } = window;
   const term = new Terminal({
     cursorBlink: true,
@@ -42,7 +78,7 @@
 
   term.open(document.getElementById('terminal-container'));
 
-  const PROMPT = '$ ';
+  const PROMPT = '>| ';
   let commandBuffer = '';
   let mode = "command"; // "command" or "edit"
   let currentEditLines = [];
@@ -216,8 +252,7 @@
     scrollBottom();
   });
 
-  term.write(PROMPT);
-  scrollBottom();
+  showLogo();
 </script>
 </body>
 </html>
