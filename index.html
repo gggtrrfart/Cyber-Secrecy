@@ -1,1145 +1,837 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Hyper-Realistic Hacker Simulator (HackerSim v1.0)</title>
-<style>
-  /* --- Reset & Base --- */
-  * {
-    box-sizing: border-box;
-  }
-  html, body {
-    margin: 0; padding: 0;
-    height: 100%;
-    background: linear-gradient(135deg, #2d6ca2 0%, #63a7f0 100%);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #ddd;
-    user-select: none;
-    overflow: hidden;
-  }
-  a {
-    color: #0ff;
-    text-decoration: none;
-  }
-  a:hover {
-    text-decoration: underline;
-  }
-  /* --- Container --- */
-  #app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    width: 100vw;
-    background: #0f1c3f;
-    box-shadow:
-      inset 0 0 40px #3aa3ff88,
-      inset 0 0 80px #44b1ffaa;
-  }
-  /* --- Top Bar --- */
-  #topbar {
-    flex-shrink: 0;
-    height: 50px;
-    background: linear-gradient(90deg, #00509e, #0086ff);
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    box-shadow: 0 3px 10px #004a7e99;
-    user-select: none;
-  }
-  #logo {
-    font-weight: 900;
-    font-size: 28px;
-    color: #00e0ff;
-    text-shadow:
-      0 0 5px #00e0ff,
-      0 0 10px #00e0ff,
-      0 0 20px #00e0ff;
-    cursor: default;
-    margin-right: 30px;
-  }
-  #tabs {
-    display: flex;
-    gap: 12px;
-  }
-  .tab {
-    padding: 8px 18px;
-    font-weight: 600;
-    font-size: 15px;
-    background: rgba(0,0,0,0.25);
-    border-radius: 8px 8px 0 0;
-    color: #99ccff;
-    cursor: pointer;
-    transition:
-      background 0.3s ease,
-      color 0.3s ease;
-  }
-  .tab:hover {
-    background: rgba(0,0,0,0.4);
-    color: #00e0ff;
-  }
-  .tab.active {
-    background: #00cfff;
-    color: #00202e;
-    box-shadow: 0 5px 15px #00cfff99;
-  }
-
-  /* --- Content Area --- */
-  #content {
-    flex-grow: 1;
-    display: flex;
-    position: relative;
-    background: #061b37;
-    box-shadow:
-      inset 0 0 40px #00bfff44,
-      inset 0 0 70px #0057a2cc;
-    overflow: hidden;
-  }
-
-  /* --- Panels --- */
-  .panel {
-    display: none;
-    width: 100%;
-    height: 100%;
-    padding: 15px 20px;
-    color: #aaffff;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 15px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #00bfff88 #003050;
-  }
-  .panel.active {
-    display: block;
-  }
-  /* Scrollbar style */
-  .panel::-webkit-scrollbar {
-    width: 12px;
-  }
-  .panel::-webkit-scrollbar-track {
-    background: #00203b;
-    border-radius: 8px;
-  }
-  .panel::-webkit-scrollbar-thumb {
-    background: #00bfffaa;
-    border-radius: 8px;
-  }
-  .panel::-webkit-scrollbar-thumb:hover {
-    background: #00d0ffdd;
-  }
-
-  /* === TERMINAL PANEL === */
-  #terminal {
-    background: #000;
-    color: #0f0;
-    box-shadow:
-      inset 0 0 15px #00ff0044,
-      inset 0 0 35px #00ff0055;
-    font-size: 16px;
-    line-height: 1.35em;
-    padding: 20px;
-    white-space: pre-wrap;
-  }
-  #terminal-input {
-    width: 100%;
-    background: #001000cc;
-    border: none;
-    outline: none;
-    color: #0f0;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 16px;
-    padding: 8px 14px;
-    margin-top: 8px;
-    border-radius: 6px;
-    box-shadow: 0 0 10px #00ff0044 inset;
-    caret-color: #0f0;
-  }
-  #terminal-input::placeholder {
-    color: #005500aa;
-  }
-
-  /* === SERVERS PANEL === */
-  #servers {
-    display: flex;
-    gap: 20px;
-  }
-  #servers-list {
-    flex: 1 1 280px;
-    background: #09253e;
-    border-radius: 8px;
-    overflow-y: auto;
-    box-shadow: 0 0 20px #00aaff44 inset;
-  }
-  #servers-list li {
-    padding: 12px 14px;
-    border-bottom: 1px solid #004970aa;
-    cursor: pointer;
-    transition: background 0.3s ease;
-    user-select: none;
-  }
-  #servers-list li:hover {
-    background: #00b3ff22;
-  }
-  #servers-list li.active {
-    background: #0099ff44;
-    color: #cceeff;
-  }
-  #server-details {
-    flex: 2 1 auto;
-    background: #0a3b66;
-    border-radius: 8px;
-    padding: 18px;
-    box-shadow:
-      inset 0 0 25px #0099ff44;
-    white-space: pre-wrap;
-    font-size: 14px;
-    line-height: 1.4em;
-  }
-
-  /* === EDITOR PANEL === */
-  #editor {
-    display: flex;
-    flex-direction: column;
-  }
-  #editor-textarea {
-    flex-grow: 1;
-    background: #0b254a;
-    border: none;
-    border-radius: 8px;
-    color: #aaffcc;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 17px;
-    padding: 20px;
-    resize: none;
-    box-shadow: inset 0 0 25px #33ffaa88;
-    outline: none;
-    line-height: 1.5em;
-  }
-  #run-script-btn {
-    margin-top: 12px;
-    padding: 12px 20px;
-    font-weight: 700;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 17px;
-    background: #004422;
-    border: none;
-    color: #aaffcc;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
-  #run-script-btn:hover {
-    background: #007733;
-    box-shadow: 0 0 15px #00ffbbbb;
-  }
-
-  /* === PHONE PANEL === */
-  #phone-contacts {
-    max-height: 40%;
-    overflow-y: auto;
-    background: #0c1c2a;
-    border-radius: 8px;
-    padding: 10px;
-    user-select: none;
-    box-shadow: inset 0 0 15px #0099ffaa;
-  }
-  #phone-contacts li {
-    padding: 10px 14px;
-    border-bottom: 1px solid #003355aa;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
-  #phone-contacts li:hover {
-    background: #0055aa33;
-  }
-  #phone-contacts li.active {
-    background: #0077ff66;
-    color: #ccddff;
-  }
-  #phone-chat {
-    flex-grow: 1;
-    margin-top: 14px;
-    background: #002a55;
-    border-radius: 8px;
-    padding: 14px;
-    overflow-y: auto;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 15px;
-    line-height: 1.4em;
-    color: #aaddff;
-  }
-  #phone-input {
-    width: 100%;
-    margin-top: 10px;
-    padding: 12px 16px;
-    border-radius: 8px;
-    border: none;
-    outline: none;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 16px;
-    color: #eef;
-    background: #004477cc;
-    box-shadow: inset 0 0 10px #0066ffbb;
-  }
-  #phone-input::placeholder {
-    color: #6699ccaa;
-  }
-
-  /* === BLACK MARKET PANEL === */
-  #blackmarket-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 18px;
-    padding-top: 8px;
-  }
-  .blackmarket-item {
-    flex: 0 0 180px;
-    background: #2a004d;
-    border-radius: 12px;
-    padding: 14px 18px;
-    cursor: pointer;
-    user-select: none;
-    color: #ddbbee;
-    box-shadow: 0 0 15px #aa55ffcc inset;
-    transition: background 0.3s ease;
-  }
-  .blackmarket-item:hover {
-    background: #4410aa;
-  }
-  .blackmarket-item h3 {
-    margin: 0 0 8px 0;
-    font-size: 18px;
-    text-shadow: 0 0 4px #d0baffcc;
-  }
-  .blackmarket-item p {
-    font-size: 14px;
-    margin: 0;
-  }
-
-  /* === SETTINGS PANEL === */
-  #settings label {
-    display: block;
-    margin-bottom: 18px;
-    font-size: 15px;
-    color: #aaddee;
-  }
-  #settings input[type=range] {
-    width: 100%;
-    margin-top: 6px;
-  }
-  #settings select {
-    margin-top: 6px;
-    padding: 6px 10px;
-    border-radius: 6px;
-    border: none;
-    font-size: 16px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
-
-  /* === TOOLTIP STYLE === */
-  .tooltip {
-    position: relative;
-    cursor: help;
-  }
-  .tooltip:hover::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translate(-50%, -8px);
-    background: #001833cc;
-    color: #aaffff;
-    padding: 6px 10px;
-    border-radius: 6px;
-    white-space: nowrap;
-    font-size: 13px;
-    pointer-events: none;
-    opacity: 1;
-    transition: opacity 0.2s ease;
-    box-shadow: 0 0 10px #00bbffbb;
-    z-index: 1000;
-  }
-  .tooltip::after {
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-
-  /* --- Animations --- */
-  .button-hover-fade:hover {
-    animation: glowPulse 1.2s infinite alternate;
-  }
-  @keyframes glowPulse {
-    0% {
-      box-shadow: 0 0 8px #00ccffaa;
+  <script src="engine.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cyber-Secrecy</title>
+  <style>
+    /* Base Styles */
+    body, html {
+      margin: 0; padding: 0; height: 100%;
+      background: linear-gradient(135deg, #1b2735, #090a0f);
+      color: #0f0;
+      font-family: 'Courier New', Courier, monospace;
+      user-select: none;
+      overflow: hidden;
     }
-    100% {
-      box-shadow: 0 0 20px #00ccffee;
+    #game-container {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
-  }
-
-</style>
+    header {
+      background-color: #0a0f13;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #0f0;
+      box-shadow: 0 0 10px #0f0;
+    }
+    header h1 {
+      margin: 0;
+      font-weight: normal;
+      color: #0f0;
+      text-shadow: 0 0 10px #0f0;
+    }
+    nav {
+      display: flex;
+      gap: 10px;
+    }
+    nav button {
+      background: transparent;
+      border: 1.5px solid #0f0;
+      color: #0f0;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 3px;
+      transition: background 0.2s ease;
+      text-shadow: 0 0 5px #0f0;
+    }
+    nav button.active,
+    nav button:hover {
+      background: #0f0;
+      color: #000;
+      box-shadow: 0 0 15px #0f0;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      background: #101820;
+      padding: 10px;
+      box-sizing: border-box;
+      overflow: hidden;
+      position: relative;
+    }
+    /* Terminal styles */
+    #terminal {
+      background: #000;
+      color: #0f0;
+      font-family: monospace;
+      font-size: 16px;
+      line-height: 1.4;
+      padding: 10px;
+      flex: 1;
+      border-radius: 5px;
+      box-shadow: 0 0 15px #0f0;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      user-select: text;
+      position: relative;
+    }
+    #terminal-input {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      background: #010101;
+      color: #0f0;
+      font-family: monospace;
+      font-size: 16px;
+      outline: none;
+      box-sizing: border-box;
+      border-radius: 0 0 5px 5px;
+      box-shadow: inset 0 0 5px #0f0;
+    }
+    /* Servers Tab */
+    #servers-tab {
+      flex: 1;
+      background: #121b22;
+      border-radius: 5px;
+      padding: 10px;
+      overflow-y: auto;
+      box-shadow: 0 0 15px #0f0;
+      color: #0f0;
+      font-size: 14px;
+    }
+    .server-item {
+      background: #0a1117;
+      margin-bottom: 8px;
+      padding: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 0 5px #0f0 inset;
+      transition: background 0.2s ease;
+    }
+    .server-item:hover {
+      background: #14242e;
+    }
+    .server-item.selected {
+      background: #1c3b48;
+      box-shadow: 0 0 10px #0f0;
+    }
+    /* Editor */
+    #editor-tab {
+      flex: 1;
+      background: #101820;
+      border-radius: 5px;
+      box-shadow: 0 0 15px #0f0;
+      display: flex;
+      flex-direction: column;
+      color: #0f0;
+    }
+    #editor-header {
+      padding: 10px;
+      border-bottom: 1px solid #0f0;
+      font-size: 14px;
+      background: #0a1117;
+      user-select: none;
+    }
+    #code-area {
+      flex: 1;
+      background: #000;
+      color: #0f0;
+      font-family: monospace;
+      font-size: 16px;
+      padding: 10px;
+      border: none;
+      resize: none;
+      outline: none;
+      box-sizing: border-box;
+      border-radius: 0 0 5px 5px;
+      box-shadow: inset 0 0 10px #0f0;
+      white-space: pre;
+      overflow-y: auto;
+    }
+    /* Phone */
+    #phone-tab {
+      flex: 1;
+      background: #121b22;
+      border-radius: 5px;
+      color: #0f0;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 15px #0f0;
+    }
+    #contacts-list {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+    .contact-item {
+      padding: 8px;
+      border-bottom: 1px solid #0f0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .contact-item:hover {
+      background: #14242e;
+    }
+    #chat-box {
+      flex: 2;
+      background: #000;
+      border-radius: 5px;
+      padding: 10px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 14px;
+      margin-bottom: 5px;
+      box-shadow: inset 0 0 10px #0f0;
+    }
+    #chat-input {
+      padding: 8px;
+      border-radius: 5px;
+      border: none;
+      outline: none;
+      font-family: monospace;
+      font-size: 14px;
+      color: #0f0;
+      background: #010101;
+      box-shadow: inset 0 0 10px #0f0;
+      box-sizing: border-box;
+      width: 100%;
+    }
+    /* Black Market */
+    #blackmarket-tab {
+      flex: 1;
+      background: #121b22;
+      border-radius: 5px;
+      color: #0f0;
+      padding: 10px;
+      box-shadow: 0 0 15px #0f0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      font-size: 14px;
+    }
+    #hitboard {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+    .hit-item {
+      background: #0a1117;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      box-shadow: inset 0 0 5px #0f0;
+      transition: background 0.2s ease;
+    }
+    .hit-item:hover {
+      background: #14242e;
+    }
+    /* Settings */
+    #settings-tab {
+      flex: 1;
+      background: #121b22;
+      border-radius: 5px;
+      padding: 10px;
+      box-shadow: 0 0 15px #0f0;
+      color: #0f0;
+      font-size: 14px;
+      overflow-y: auto;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px 0;
+    }
+    input[type=range] {
+      width: 100%;
+      -webkit-appearance: none;
+      background: #0a1117;
+      height: 10px;
+      border-radius: 5px;
+      outline: none;
+      box-shadow: inset 0 0 10px #0f0;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: #0f0;
+      cursor: pointer;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #0f0;
+      margin-top: -4px;
+    }
+    /* Tooltips */
+    .tooltip {
+      position: relative;
+      cursor: help;
+    }
+    .tooltip:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      background: #0f0;
+      color: #000;
+      padding: 4px 8px;
+      border-radius: 4px;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-size: 12px;
+      z-index: 10;
+      box-shadow: 0 0 5px #0f0;
+    }
+  </style>
 </head>
 <body>
-<div id="app" role="main" aria-label="Hyper-Realistic Hacker Simulator Application">
-  <div id="topbar" role="navigation" aria-label="Main Navigation Bar">
-    <div id="logo" tabindex="0" aria-label="HackerSim Logo">&#x1F576; HackerSim</div>
-    <nav id="tabs" role="tablist" aria-label="Primary Tabs">
-      <div class="tab active" role="tab" aria-selected="true" tabindex="0" data-tab="terminal" id="tab-terminal">Terminal</div>
-      <div class="tab" role="tab" aria-selected="false" tabindex="-1" data-tab="servers" id="tab-servers">Servers</div>
-      <div class="tab" role="tab" aria-selected="false" tabindex="-1" data-tab="editor" id="tab-editor">Editor</div>
-      <div class="tab" role="tab" aria-selected="false" tabindex="-1" data-tab="phone" id="tab-phone">Phone</div>
-      <div class="tab" role="tab" aria-selected="false" tabindex="-1" data-tab="blackmarket" id="tab-blackmarket">Black Market</div>
-      <div class="tab" role="tab" aria-selected="false" tabindex="-1" data-tab="settings" id="tab-settings">Settings</div>
-    </nav>
+  <div id="game-container">
+    <header>
+      <h1>Cyber-Secrecy</h1>
+      <nav>
+        <button id="tab-terminal" class="active">Terminal</button>
+        <button id="tab-servers">Servers</button>
+        <button id="tab-editor">Editor</button>
+        <button id="tab-phone">Phone</button>
+        <button id="tab-blackmarket">Black Market</button>
+        <button id="tab-settings">Settings</button>
+      </nav>
+    </header>
+    <main>
+      <!-- Terminal Tab -->
+      <section id="terminal-tab" style="flex:1; display:flex; flex-direction: column;">
+        <div id="terminal" tabindex="0" aria-label="Terminal output"></div>
+        <input id="terminal-input" autocomplete="off" placeholder="Type command here..." />
+      </section>
+
+      <!-- Servers Tab -->
+      <section id="servers-tab" style="display:none;">
+        <button id="reload-servers-btn" style="margin-bottom:10px; padding: 6px 12px; border: 1.5px solid #0f0; background: transparent; color:#0f0; cursor:pointer; border-radius:3px;">Reload Servers</button>
+        <div id="servers-list"></div>
+      </section>
+
+      <!-- Editor Tab -->
+      <section id="editor-tab" style="display:none; flex-direction: column;">
+        <div id="editor-header">Editing Script: <span id="script-name-display">none</span></div>
+        <textarea id="code-area" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+      </section>
+
+      <!-- Phone Tab -->
+      <section id="phone-tab" style="display:none; flex-direction: column;">
+        <div id="contacts-list"></div>
+        <div id="chat-box" aria-live="polite"></div>
+        <input id="chat-input" placeholder="Type a message..." autocomplete="off" />
+      </section>
+
+      <!-- Black Market Tab -->
+      <section id="blackmarket-tab" style="display:none; flex-direction: column;">
+        <div id="hitboard"></div>
+      </section>
+
+      <!-- Settings Tab -->
+      <section id="settings-tab" style="display:none;">
+        <label for="volume-slider">Volume</label>
+        <input type="range" id="volume-slider" min="0" max="100" value="50" />
+        <label for="brightness-slider">Brightness</label>
+        <input type="range" id="brightness-slider" min="0" max="100" value="75" />
+        <label for="quality-slider">Graphics Quality</label>
+        <input type="range" id="quality-slider" min="1" max="10" value="7" />
+      </section>
+    </main>
   </div>
 
-  <section id="content" tabindex="0">
-    <article id="terminal" class="panel active" role="tabpanel" aria-labelledby="tab-terminal" tabindex="0" aria-live="polite" aria-relevant="additions">
-      <pre id="terminal-output" style="white-space: pre-wrap;"></pre>
-      <input id="terminal-input" aria-label="Terminal Command Input" placeholder="Enter command..." autocomplete="off" />
-    </article>
+  <script>
+    // === GAME STATE AND DATA ===
 
-    <article id="servers" class="panel" role="tabpanel" aria-labelledby="tab-servers" tabindex="0">
-      <ul id="servers-list" role="list" aria-label="List of known servers"></ul>
-      <pre id="server-details" aria-live="polite" aria-atomic="true">Select a server from the list to view details...</pre>
-    </article>
-
-    <article id="editor" class="panel" role="tabpanel" aria-labelledby="tab-editor" tabindex="0" aria-label="Code Editor">
-      <textarea id="editor-textarea" spellcheck="false" aria-label="Terminus Script Editor" placeholder="// Write your Terminus (.t) script here..."></textarea>
-      <button id="run-script-btn" class="button-hover-fade" aria-label="Run Script Button">Run Script</button>
-    </article>
-
-    <article id="phone" class="panel" role="tabpanel" aria-labelledby="tab-phone" tabindex="0">
-      <ul id="phone-contacts" role="list" aria-label="Phone contacts"></ul>
-      <div id="phone-chat" aria-live="polite" aria-atomic="false"></div>
-      <input id="phone-input" type="text" aria-label="Phone chat input" placeholder="Type a message... Press Enter to send" autocomplete="off" />
-    </article>
-
-    <article id="blackmarket" class="panel" role="tabpanel" aria-labelledby="tab-blackmarket" tabindex="0" aria-label="Black Market Store">
-      <div id="blackmarket-list" aria-live="polite"></div>
-    </article>
-
-    <article id="settings" class="panel" role="tabpanel" aria-labelledby="tab-settings" tabindex="0" aria-label="Settings">
-      <label>
-        Resolution:
-        <select id="setting-resolution" aria-label="Screen resolution settings">
-          <option value="default">Default (Fullscreen)</option>
-          <option value="1280x720">1280×720</option>
-          <option value="1920x1080" selected>1920×1080</option>
-          <option value="2560x1440">2560×1440</option>
-        </select>
-      </label>
-      <label>
-        Volume:
-        <input type="range" id="setting-volume" min="0" max="100" value="60" aria-valuemin="0" aria-valuemax="100" aria-valuenow="60" aria-label="Volume control slider" />
-      </label>
-      <label>
-        Terminal Color Scheme:
-        <select id="setting-terminal-color" aria-label="Terminal color scheme settings">
-          <option value="green" selected>Green</option>
-          <option value="blue">Blue</option>
-          <option value="cyan">Cyan</option>
-          <option value="purple">Purple</option>
-        </select>
-      </label>
-    </article>
-  </section>
-</div>
-
-<script>
-(() => {
-  "use strict";
-
-  // --- Global Game State ---
-  const state = {
-    playerName: null,
-    serverName: null,
-    servers: {}, // serverName => {owner, ip, cpu, firewallLevel, malware, dataValue, ...}
-    players: {}, // playerName => {currentServer, malware, cpuUsage, friends, screenSharing, malwareProtection, ...}
-    logs: [],
-    currentTab: "terminal",
-    terminalHistory: [],
-    terminalHistoryIndex: 0,
-    currentServer: null,
-    malwareScripts: {}, // stored malware scripts by player
-    runningScripts: {}, // currently running scripts
-    blackMarketItems: [],
-    phoneContacts: [],
-    phoneChats: {}, // playerName => [messages]
-    settings: {
-      resolution: "1920x1080",
-      volume: 60,
-      terminalColor: "green",
-    },
-    cpuMax: 100, // max CPU units for each player
-    malwareDetectionMessages: [
-      "Potential data breach detected.",
-      "Unusual activity detected in firewall logs.",
-      "Suspicious process flagged.",
-      "Firewall alert: Possible intrusion attempt.",
-    ],
-  };
-
-  // --- UTILS ---
-
-  function $(id) { return document.getElementById(id); }
-  function createEl(tag, opts = {}) {
-    const el = document.createElement(tag);
-    if (opts.cls) el.className = opts.cls;
-    if (opts.text) el.textContent = opts.text;
-    if (opts.html) el.innerHTML = opts.html;
-    if (opts.attrs) {
-      for (const [k,v] of Object.entries(opts.attrs)) el.setAttribute(k,v);
-    }
-    if (opts.events) {
-      for (const [k,v] of Object.entries(opts.events)) el.addEventListener(k,v);
-    }
-    return el;
-  }
-  function randomChoice(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
-  function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-  function clamp(num, min, max) {
-    return Math.min(Math.max(num, min), max);
-  }
-
-  // --- UI TAB HANDLER ---
-  const tabs = document.querySelectorAll("#tabs .tab");
-  const panels = document.querySelectorAll(".panel");
-
-  function switchTab(tabName) {
-    state.currentTab = tabName;
-    tabs.forEach(t => {
-      if (t.dataset.tab === tabName) {
-        t.classList.add("active");
-        t.setAttribute("aria-selected", "true");
-        t.tabIndex = 0;
-      } else {
-        t.classList.remove("active");
-        t.setAttribute("aria-selected", "false");
-        t.tabIndex = -1;
+    const game = {
+      player: {
+        name: '',
+        serverName: '',
+        cpuUsage: 0,
+        malware: [],
+        firewalls: [],
+        contacts: [],
+        chatLogs: {},
+        scripts: {},
+        blackMarketHits: [],
+        money: 5000,
+      },
+      servers: [],
+      selectedServerId: null,
+      selectedScript: null,
+      currentTab: 'terminal',
+      commandHistory: [],
+      commandHistoryIndex: -1,
+      terminalLines: [],
+      settings: {
+        volume: 50,
+        brightness: 75,
+        quality: 7,
       }
-    });
-    panels.forEach(p => {
-      if (p.id === tabName) {
-        p.classList.add("active");
-        p.setAttribute("aria-hidden", "false");
-      } else {
-        p.classList.remove("active");
-        p.setAttribute("aria-hidden", "true");
-      }
-    });
-    // Focus first element in panel if applicable
-    setTimeout(() => {
-      const panel = $(`#${tabName}`);
-      if (panel) panel.focus();
-    }, 100);
-  }
+    };
 
-  tabs.forEach(tab => {
-    tab.addEventListener("click", () => {
-      switchTab(tab.dataset.tab);
+    // === UTILS ===
+
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function createElement(type, attrs = {}, ...children) {
+      const el = document.createElement(type);
+      for (const [key, value] of Object.entries(attrs)) {
+        if (key.startsWith('on') && typeof value === 'function') {
+          el.addEventListener(key.substring(2).toLowerCase(), value);
+        } else if (key === 'class') {
+          el.className = value;
+        } else {
+          el.setAttribute(key, value);
+        }
+      }
+      children.forEach(child => {
+        if (typeof child === 'string') el.appendChild(document.createTextNode(child));
+        else if (child) el.appendChild(child);
+      });
+      return el;
+    }
+
+    // === TABS AND UI HANDLING ===
+
+    const tabs = {
+      terminal: document.getElementById('terminal-tab'),
+      servers: document.getElementById('servers-tab'),
+      editor: document.getElementById('editor-tab'),
+      phone: document.getElementById('phone-tab'),
+      blackmarket: document.getElementById('blackmarket-tab'),
+      settings: document.getElementById('settings-tab'),
+    };
+
+    const tabButtons = {
+      terminal: document.getElementById('tab-terminal'),
+      servers: document.getElementById('tab-servers'),
+      editor: document.getElementById('tab-editor'),
+      phone: document.getElementById('tab-phone'),
+      blackmarket: document.getElementById('tab-blackmarket'),
+      settings: document.getElementById('tab-settings'),
+    };
+
+    function switchTab(tabName) {
+      if (!tabs[tabName]) return;
+      Object.entries(tabs).forEach(([key, el]) => {
+        el.style.display = key === tabName ? 'flex' : 'none';
+      });
+      Object.entries(tabButtons).forEach(([key, btn]) => {
+        btn.classList.toggle('active', key === tabName);
+      });
+      game.currentTab = tabName;
+      if (tabName === 'terminal') {
+        terminalInput.focus();
+      } else if (tabName === 'editor') {
+        codeArea.focus();
+      }
+      renderUI();
+    }
+
+    Object.entries(tabButtons).forEach(([tabName, btn]) => {
+      btn.addEventListener('click', () => switchTab(tabName));
     });
-    tab.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
+
+    // === TERMINAL ===
+
+    const terminal = document.getElementById('terminal');
+    const terminalInput = document.getElementById('terminal-input');
+
+    function addTerminalLine(text, type = 'info') {
+      const time = new Date().toLocaleTimeString();
+      const line = `[${time}] ${text}`;
+      game.terminalLines.push(line);
+      if (game.terminalLines.length > 100) game.terminalLines.shift();
+      terminal.textContent = game.terminalLines.join('\n');
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function processTerminalCommand(cmd) {
+      cmd = cmd.trim();
+      if (!cmd) return;
+
+      game.commandHistory.push(cmd);
+      game.commandHistoryIndex = game.commandHistory.length;
+
+      addTerminalLine(`> ${cmd}`);
+
+      // Basic commands
+      const args = cmd.split(' ');
+      const baseCmd = args[0].toLowerCase();
+
+      switch (baseCmd) {
+        case 'help':
+          addTerminalLine('Available commands: help, ls, cd, run, clear, stats, servers, edit, chat');
+          break;
+        case 'clear':
+          game.terminalLines = [];
+          terminal.textContent = '';
+          break;
+        case 'stats':
+          addTerminalLine(`Player: ${game.player.name}`);
+          addTerminalLine(`Money: $${game.player.money}`);
+          addTerminalLine(`CPU Usage: ${game.player.cpuUsage}%`);
+          addTerminalLine(`Malware Count: ${game.player.malware.length}`);
+          addTerminalLine(`Firewalls: ${game.player.firewalls.length}`);
+          break;
+        case 'servers':
+          switchTab('servers');
+          break;
+        case 'edit':
+          if (args.length < 2) {
+            addTerminalLine('Usage: edit <scriptname.T>');
+            break;
+          }
+          const scriptName = args[1];
+          if (!game.player.scripts[scriptName]) {
+            game.player.scripts[scriptName] = '';
+            addTerminalLine(`Created new script: ${scriptName}`);
+          }
+          game.selectedScript = scriptName;
+          document.getElementById('script-name-display').textContent = scriptName;
+          codeArea.value = game.player.scripts[scriptName];
+          switchTab('editor');
+          break;
+        case 'run':
+          if (!game.selectedScript) {
+            addTerminalLine('No script selected. Use edit <scriptname.T> first.');
+            break;
+          }
+          runScript(game.selectedScript);
+          break;
+        case 'chat':
+          switchTab('phone');
+          break;
+        default:
+          addTerminalLine(`Unknown command: ${baseCmd}. Type 'help' for commands.`);
+      }
+    }
+
+    terminalInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        processTerminalCommand(terminalInput.value);
+        terminalInput.value = '';
+      } else if (e.key === 'ArrowUp') {
+        if (game.commandHistoryIndex > 0) {
+          game.commandHistoryIndex--;
+          terminalInput.value = game.commandHistory[game.commandHistoryIndex] || '';
+        }
         e.preventDefault();
-        switchTab(tab.dataset.tab);
-      }
-    });
-  });
-
-  // --- TERMINAL LOGIC ---
-
-  const terminalOutput = $("terminal-output");
-  const terminalInput = $("terminal-input");
-
-  function logToTerminal(text, type = "info") {
-    const timeStr = new Date().toLocaleTimeString();
-    const prefix = `[${timeStr}] `;
-    // Color code by type?
-    let color = "#0f0";
-    if (type === "error") color = "#f55";
-    else if (type === "warn") color = "#ff5";
-    else if (type === "system") color = "#0af";
-    const line = createEl("div");
-    line.style.color = color;
-    line.textContent = prefix + text;
-    terminalOutput.appendChild(line);
-    terminalOutput.scrollTop = terminalOutput.scrollHeight;
-  }
-
-  // For simulating slow typing on terminal output (e.g. screen share logs)
-  async function terminalTypeLine(line, delay = 30) {
-    const timeStr = new Date().toLocaleTimeString();
-    const prefix = `[${timeStr}] `;
-    const lineDiv = createEl("div");
-    terminalOutput.appendChild(lineDiv);
-    for (let i = 0; i < prefix.length; i++) {
-      lineDiv.textContent += prefix[i];
-      await sleep(delay);
-    }
-    for (let i = 0; i < line.length; i++) {
-      lineDiv.textContent += line[i];
-      await sleep(delay + (Math.random() * 20));
-    }
-    terminalOutput.scrollTop = terminalOutput.scrollHeight;
-  }
-
-  // --- PLAYER & SERVER SETUP ---
-
-  function createPlayer(name) {
-    if (state.players[name]) return false; // already exists
-    state.players[name] = {
-      name,
-      serverName: name + "'s Server",
-      currentServer: name + "'s Server",
-      cpuUsage: 0,
-      malwareProtection: false,
-      malwareInstalled: false,
-      malwareScripts: [],
-      screenSharingWith: null,
-      funds: 1000,
-      dataStolen: 0,
-      blackMarketPurchased: [],
-      reportsAgainst: 0,
-      kicked: false,
-    };
-    createServer(state.players[name].serverName, name);
-    return true;
-  }
-  function createServer(serverName, owner) {
-    if (state.servers[serverName]) return false;
-    state.servers[serverName] = {
-      name: serverName,
-      owner,
-      ip: `192.168.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`,
-      cpuMax: 100,
-      cpuUsed: 0,
-      firewallLevel: 1,
-      malwareInstalled: false,
-      dataValue: Math.floor(Math.random()*1000) + 500,
-      malwareScripts: [],
-      logs: [],
-      playersConnected: [],
-      location: randomChoice([
-        {city:"Chicago", coords:[41.8781, -87.6298]},
-        {city:"New York", coords:[40.7128, -74.0060]},
-        {city:"San Francisco", coords:[37.7749, -122.4194]},
-        {city:"Seattle", coords:[47.6062, -122.3321]},
-        {city:"Boston", coords:[42.3601, -71.0589]},
-      ]),
-    };
-    return true;
-  }
-
-  // --- INITIAL PLAYER & SERVER SETUP ---
-
-  // Player is "You"
-  const playerName = "You";
-  createPlayer(playerName);
-
-  // Create some NPC players and servers for multiplayer feel
-  ["Alice", "Bob", "Charlie", "Delta"].forEach(npc => {
-    createPlayer(npc);
-  });
-
-  // Link players connected to servers
-  Object.values(state.players).forEach(p => {
-    const s = state.servers[p.serverName];
-    if (s && !s.playersConnected.includes(p.name)) {
-      s.playersConnected.push(p.name);
-    }
-  });
-
-  state.currentServer = state.players[playerName].currentServer;
-
-  // --- DISPLAY SERVERS LIST ---
-
-  const serversList = $("servers-list");
-  const serverDetails = $("server-details");
-
-  function renderServersList() {
-    serversList.innerHTML = "";
-    Object.values(state.servers).forEach(server => {
-      const li = createEl("li", {
-        text: `${server.name} (${server.ip})`,
-        attrs: {tabindex: "0"},
-      });
-      li.dataset.serverName = server.name;
-      li.title = `Owner: ${server.owner}, Firewall Level: ${server.firewallLevel}, Data Value: $${server.dataValue}`;
-      li.addEventListener("click", () => {
-        selectServer(server.name);
-      });
-      li.addEventListener("keydown", e => {
-        if (e.key === "Enter" || e.key === " ") {
-          selectServer(server.name);
-          e.preventDefault();
+      } else if (e.key === 'ArrowDown') {
+        if (game.commandHistoryIndex < game.commandHistory.length - 1) {
+          game.commandHistoryIndex++;
+          terminalInput.value = game.commandHistory[game.commandHistoryIndex] || '';
+        } else {
+          game.commandHistoryIndex = game.commandHistory.length;
+          terminalInput.value = '';
         }
-      });
-      serversList.appendChild(li);
-    });
-  }
-  function selectServer(serverName) {
-    Object.querySelectorAll?.(`#servers-list li`).forEach(li => li.classList.remove("active"));
-    const lis = serversList.querySelectorAll("li");
-    lis.forEach(li => {
-      if (li.dataset.serverName === serverName) li.classList.add("active");
-    });
-    state.currentServer = serverName;
-    const server = state.servers[serverName];
-    if (!server) {
-      serverDetails.textContent = "Unknown server.";
-      return;
-    }
-    const info = 
-`Server: ${server.name}
-Owner: ${server.owner}
-IP Address: ${server.ip}
-CPU Usage: ${server.cpuUsed} / ${server.cpuMax}
-Firewall Level: ${server.firewallLevel}
-Malware Installed: ${server.malwareInstalled ? "Yes" : "No"}
-Data Value: $${server.dataValue}
-Players Connected: ${server.playersConnected.join(", ")}
-Location: ${server.location.city} (${server.location.coords[0].toFixed(2)}, ${server.location.coords[1].toFixed(2)})`;
-
-    serverDetails.textContent = info;
-  }
-
-  // --- TERMINAL COMMANDS ---
-
-  const terminalCommands = {
-    help() {
-      return `Available commands:
-  help - Show this message
-  servers - List known servers
-  scan [server] - Scan a server for info
-  connect [server] - Connect to a server
-  disconnect - Disconnect from current server
-  run [script.t] - Run a Terminus script
-  malware - Show malware status
-  stats - Show your status
-  clear - Clear terminal screen
-  exit - Close the terminal (switch to editor)
-`;
-    },
-    servers() {
-      const serverNames = Object.keys(state.servers);
-      if (serverNames.length === 0) return "No servers found.";
-      return "Known servers:\n" + serverNames.map(s => `- ${s}`).join("\n");
-    },
-    scan(args) {
-      if (!args.length) return "Usage: scan [server]";
-      const serverName = args[0];
-      const server = state.servers[serverName];
-      if (!server) return `Server '${serverName}' not found.`;
-      return `Scan result for '${serverName}':
-IP: ${server.ip}
-CPU Usage: ${server.cpuUsed} / ${server.cpuMax}
-Firewall Level: ${server.firewallLevel}
-Malware Installed: ${server.malwareInstalled ? "Yes" : "No"}
-Data Value: $${server.dataValue}`;
-    },
-    connect(args) {
-      if (!args.length) return "Usage: connect [server]";
-      const serverName = args[0];
-      if (!state.servers[serverName]) return `Server '${serverName}' not found.`;
-      state.currentServer = serverName;
-      return `Connected to '${serverName}'.`;
-    },
-    disconnect() {
-      state.currentServer = null;
-      return "Disconnected from server.";
-    },
-    run(args) {
-      if (!args.length) return "Usage: run [script.t]";
-      const scriptName = args[0];
-      if (!state.malwareScripts[scriptName]) return `Script '${scriptName}' not found in your scripts.`;
-      runTerminusScript(scriptName);
-      return `Running script '${scriptName}'...`;
-    },
-    malware() {
-      const player = state.players[playerName];
-      if (!player.malwareInstalled) return "You have no malware installed.";
-      return `Malware Status:
-  Installed: Yes
-  CPU Usage: ${player.cpuUsage} / ${state.cpuMax}
-  Scripts Running: ${player.malwareScripts.length}
-  Funds: $${player.funds.toFixed(2)}`;
-    },
-    stats() {
-      const player = state.players[playerName];
-      return `Player Stats:
-  Name: ${player.name}
-  Current Server: ${player.currentServer}
-  Malware Protection: ${player.malwareProtection ? "Enabled" : "Disabled"}
-  Funds: $${player.funds.toFixed(2)}
-  Data Stolen: $${player.dataStolen.toFixed(2)}
-  Reports Against You: ${player.reportsAgainst}
-  Kicked: ${player.kicked ? "Yes" : "No"}`;
-    },
-    clear() {
-      terminalOutput.innerHTML = "";
-      return "";
-    },
-    exit() {
-      switchTab("editor");
-      return "";
-    },
-  };
-
-  async function handleTerminalCommand(commandLine) {
-    logToTerminal(`> ${commandLine}`, "system");
-    if (!commandLine.trim()) return;
-    const parts = commandLine.trim().split(/\s+/);
-    const cmd = parts[0].toLowerCase();
-    const args = parts.slice(1);
-    if (!terminalCommands[cmd]) {
-      logToTerminal(`Command not found: ${cmd}`, "error");
-      return;
-    }
-    try {
-      const result = await terminalCommands[cmd](args);
-      if (result) logToTerminal(result, "info");
-    } catch (e) {
-      logToTerminal("Error running command: " + e.message, "error");
-    }
-  }
-
-  terminalInput.addEventListener("keydown", async (e) => {
-    if (e.key === "Enter") {
-      const cmd = terminalInput.value;
-      state.terminalHistory.push(cmd);
-      state.terminalHistoryIndex = state.terminalHistory.length;
-      terminalInput.value = "";
-      await handleTerminalCommand(cmd);
-    } else if (e.key === "ArrowUp") {
-      if (state.terminalHistoryIndex > 0) {
-        state.terminalHistoryIndex--;
-        terminalInput.value = state.terminalHistory[state.terminalHistoryIndex] || "";
+        e.preventDefault();
       }
-      e.preventDefault();
-    } else if (e.key === "ArrowDown") {
-      if (state.terminalHistoryIndex < state.terminalHistory.length - 1) {
-        state.terminalHistoryIndex++;
-        terminalInput.value = state.terminalHistory[state.terminalHistoryIndex] || "";
+    });
+
+    // === EDITOR ===
+
+    const codeArea = document.getElementById('code-area');
+    codeArea.addEventListener('input', () => {
+      if (game.selectedScript) {
+        game.player.scripts[game.selectedScript] = codeArea.value;
+      }
+    });
+
+    // Simple autocomplete for brackets and quotes
+    codeArea.addEventListener('keydown', (e) => {
+      const pairs = {
+        '{': '}',
+        '[': ']',
+        '(': ')',
+        '"': '"',
+        "'": "'",
+        '`': '`',
+      };
+      if (pairs[e.key]) {
+        e.preventDefault();
+        const start = codeArea.selectionStart;
+        const end = codeArea.selectionEnd;
+        const val = codeArea.value;
+        const closeChar = pairs[e.key];
+        codeArea.value = val.slice(0, start) + e.key + closeChar + val.slice(end);
+        codeArea.selectionStart = codeArea.selectionEnd = start + 1;
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = codeArea.selectionStart;
+        const end = codeArea.selectionEnd;
+        const val = codeArea.value;
+        codeArea.value = val.slice(0, start) + '  ' + val.slice(end);
+        codeArea.selectionStart = codeArea.selectionEnd = start + 2;
+      }
+    });
+
+    // === SERVERS ===
+
+    const serversList = document.getElementById('servers-list');
+    const reloadServersBtn = document.getElementById('reload-servers-btn');
+
+    function generateServers(count = 30) {
+      game.servers = [];
+      for (let i = 1; i <= count; i++) {
+        game.servers.push({
+          id: 'server' + i,
+          name: `Server-${i}`,
+          machines: generateMachines(randomInt(3, 7)),
+          hacked: false,
+        });
+      }
+    }
+
+    function generateMachines(count) {
+      const machineTypes = [
+        'Computer', 'Speaker', 'Smartphone', 'Router', 'Streetlight', 'Camera', 'Fridge', 'Server Rack',
+        'Office PC', 'Bedroom PC', 'Printer', 'Thermostat', 'Security Panel', 'IoT Device'
+      ];
+      const machines = [];
+      for (let i = 0; i < count; i++) {
+        machines.push({
+          id: `machine${Math.random().toString(36).substring(2, 8)}`,
+          type: machineTypes[randomInt(0, machineTypes.length -1)],
+          securityLevel: randomInt(1, 10),
+          hacked: false,
+        });
+      }
+      return machines;
+    }
+
+    function renderServers() {
+      serversList.innerHTML = '';
+      game.servers.forEach(server => {
+        const serverEl = createElement('div', {class: 'server-item'}, 
+          `${server.name} ${server.hacked ? '(Hacked)' : ''}`
+        );
+        serverEl.addEventListener('click', () => {
+          game.selectedServerId = server.id;
+          renderServerDetails(server);
+          document.querySelectorAll('.server-item').forEach(item => item.classList.remove('selected'));
+          serverEl.classList.add('selected');
+        });
+        serversList.appendChild(serverEl);
+      });
+      if (game.servers.length > 0 && !game.selectedServerId) {
+        // Auto select first server
+        game.selectedServerId = game.servers[0].id;
+        renderServerDetails(game.servers[0]);
+        serversList.firstChild.classList.add('selected');
+      }
+    }
+
+    function renderServerDetails(server) {
+      // Replace servers list with details + back button or show below servers list
+      let details = document.getElementById('server-details');
+      if (!details) {
+        details = createElement('div', {id: 'server-details', style: 'margin-top: 10px; color:#0f0;'});
+        serversList.parentElement.appendChild(details);
+      }
+      details.innerHTML = `<h3>${server.name} Machines:</h3>`;
+      server.machines.forEach(machine => {
+        const machineEl = createElement('div', {
+          class: 'server-item',
+          style: 'margin-left:10px; cursor: pointer;'
+        }, `${machine.type} (Security: ${machine.securityLevel}) ${machine.hacked ? '[Hacked]' : ''}`);
+        machineEl.addEventListener('click', () => {
+          hackMachine(server, machine);
+        });
+        details.appendChild(machineEl);
+      });
+    }
+
+    function hackMachine(server, machine) {
+      addTerminalLine(`Attempting hack on ${machine.type} of ${server.name}...`);
+      // Simple hack logic: if player cpuUsage + some random chance beats machine securityLevel, success
+      const hackPower = game.player.cpuUsage + randomInt(1, 20);
+      if (hackPower > machine.securityLevel) {
+        machine.hacked = true;
+        server.hacked = true;
+        addTerminalLine(`Success! ${machine.type} hacked.`);
+        game.player.money += 100 * machine.securityLevel;
+        addTerminalLine(`Gained $${100 * machine.securityLevel}.`);
       } else {
-        state.terminalHistoryIndex = state.terminalHistory.length;
-        terminalInput.value = "";
+        addTerminalLine(`Hack failed. Security is too strong.`);
+        game.player.cpuUsage = Math.min(100, game.player.cpuUsage + 5);
       }
-      e.preventDefault();
+      renderServers();
+      renderUI();
     }
-  });
 
-  // --- TERMINUS SCRIPT ENGINE ---
+    reloadServersBtn.addEventListener('click', () => {
+      generateServers(30);
+      game.selectedServerId = null;
+      renderServers();
+    });
 
-  // Terminus is a simple scripting language
-  // Commands: wait [ms], print [text], cpu [amount], infect [server], stealth [level]
-  // This is a simple interpreter that runs asynchronously
+    // === SCRIPT RUNNER (fake execution) ===
 
-  async function runTerminusScript(scriptName) {
-    const player = state.players[playerName];
-    const script = state.malwareScripts[scriptName];
-    if (!script) {
-      logToTerminal(`Script '${scriptName}' not found.`, "error");
-      return;
+    function runScript(scriptName) {
+      addTerminalLine(`Running script: ${scriptName}...`);
+      const scriptCode = game.player.scripts[scriptName];
+      // Simulate some CPU usage and output
+      const cpuCost = Math.min(100, Math.floor(scriptCode.length / 10));
+      game.player.cpuUsage = Math.min(100, game.player.cpuUsage + cpuCost);
+      addTerminalLine(`Script executed. CPU usage increased by ${cpuCost}%.`);
+      renderUI();
     }
-    logToTerminal(`Executing Terminus script: ${scriptName}`, "system");
-    const lines = script.split("\n").map(l => l.trim()).filter(l => l.length && !l.startsWith("//"));
-    for (const line of lines) {
-      const parts = line.split(/\s+/);
-      const cmd = parts[0].toLowerCase();
-      const args = parts.slice(1);
-      try {
-        switch (cmd) {
-          case "wait": {
-            const ms = parseInt(args[0]) || 1000;
-            await sleep(ms);
-            break;
-          }
-          case "print": {
-            const text = args.join(" ");
-            logToTerminal(text, "system");
-            break;
-          }
-          case "cpu": {
-            const amount = parseInt(args[0]) || 1;
-            player.cpuUsage = clamp(player.cpuUsage + amount, 0, state.cpuMax);
-            logToTerminal(`CPU usage increased by ${amount}. Current usage: ${player.cpuUsage}`, "warn");
-            break;
-          }
-          case "infect": {
-            const target = args[0];
-            if (!state.servers[target]) {
-              logToTerminal(`Target server '${target}' does not exist.`, "error");
-            } else {
-              const server = state.servers[target];
-              if (!server.malwareInstalled) {
-                server.malwareInstalled = true;
-                logToTerminal(`Successfully infected server '${target}'.`, "info");
-                player.dataStolen += server.dataValue * 0.1;
-                player.funds += server.dataValue * 0.15;
-              } else {
-                logToTerminal(`Server '${target}' is already infected.`, "warn");
-              }
-            }
-            break;
-          }
-          case "stealth": {
-            const lvl = parseInt(args[0]) || 1;
-            logToTerminal(`Stealth mode set to level ${lvl}.`, "info");
-            break;
-          }
-          default:
-            logToTerminal(`Unknown Terminus command: ${cmd}`, "error");
-        }
-        await sleep(200);
-      } catch (e) {
-        logToTerminal(`Error in script: ${e.message}`, "error");
+
+    // === PHONE / CHAT ===
+
+    const contactsList = document.getElementById('contacts-list');
+    const chatBox = document.getElementById('chat-box');
+    const chatInput = document.getElementById('chat-input');
+
+    function renderContacts() {
+      contactsList.innerHTML = '';
+      if (game.player.contacts.length === 0) {
+        contactsList.textContent = 'No contacts.';
+        return;
       }
-    }
-    logToTerminal(`Terminus script '${scriptName}' execution completed.`, "system");
-  }
-
-  // --- SCRIPT EDITOR & STORAGE ---
-
-  const editorTextarea = $("editor-textarea");
-  const runScriptBtn = $("run-script-btn");
-
-  runScriptBtn.addEventListener("click", () => {
-    const scriptText = editorTextarea.value.trim();
-    if (!scriptText) {
-      alert("Please enter a Terminus script before running.");
-      return;
-    }
-    // For now, store under "myscript.t"
-    const scriptName = "myscript.t";
-    state.malwareScripts[scriptName] = scriptText;
-    logToTerminal(`Script '${scriptName}' saved. You can run it via 'run myscript.t' command in Terminal.`, "system");
-  });
-
-  // --- PHONE SYSTEM ---
-
-  const phoneContactsList = $("phone-contacts");
-  const phoneChatDiv = $("phone-chat");
-  const phoneInput = $("phone-input");
-
-  // Initialize contacts with NPCs + player
-  state.phoneContacts = Object.keys(state.players).filter(p => p !== playerName);
-
-  function renderPhoneContacts() {
-    phoneContactsList.innerHTML = "";
-    state.phoneContacts.forEach(name => {
-      const li = createEl("li", {text: name, attrs: {tabindex: "0"}});
-      li.addEventListener("click", () => {
-        openChatWith(name);
+      game.player.contacts.forEach(contact => {
+        const contactEl = createElement('div', {class: 'contact-item'}, contact.name);
+        contactEl.addEventListener('click', () => {
+          openChat(contact.name);
+        });
+        contactsList.appendChild(contactEl);
       });
-      li.addEventListener("keydown", e => {
-        if (e.key === "Enter" || e.key === " ") {
-          openChatWith(name);
-          e.preventDefault();
-        }
+    }
+
+    function openChat(contactName) {
+      chatBox.innerHTML = '';
+      const chatLog = game.player.chatLogs[contactName] || [];
+      chatLog.forEach(msg => {
+        const msgEl = createElement('div', {}, `[${msg.time}] ${msg.sender}: ${msg.text}`);
+        chatBox.appendChild(msgEl);
       });
-      phoneContactsList.appendChild(li);
-    });
-  }
+      chatInput.focus();
+      chatInput.dataset.chattingWith = contactName;
+    }
 
-  let activeChat = null;
-
-  function openChatWith(contactName) {
-    activeChat = contactName;
-    // highlight selected contact
-    Array.from(phoneContactsList.children).forEach(li => {
-      li.classList.toggle("active", li.textContent === contactName);
+    chatInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const msgText = chatInput.value.trim();
+        if (!msgText) return;
+        const contactName = chatInput.dataset.chattingWith;
+        if (!contactName) return;
+        if (!game.player.chatLogs[contactName]) game.player.chatLogs[contactName] = [];
+        const time = new Date().toLocaleTimeString();
+        game.player.chatLogs[contactName].push({ sender: game.player.name, text: msgText, time });
+        chatInput.value = '';
+        openChat(contactName);
+        addTerminalLine(`Message sent to ${contactName}: ${msgText}`);
+      }
     });
-    renderChatMessages(contactName);
-  }
-  function renderChatMessages(contactName) {
-    const msgs = state.phoneChats[contactName] || [];
-    phoneChatDiv.innerHTML = "";
-    msgs.forEach(msg => {
-      const div = createEl("div");
-      div.textContent = `[${msg.time}] ${msg.sender}: ${msg.text}`;
-      div.style.marginBottom = "6px";
-      if (msg.sender === playerName) div.style.color = "#00ffcc";
-      else div.style.color = "#aad4ff";
-      phoneChatDiv.appendChild(div);
-    });
-    phoneChatDiv.scrollTop = phoneChatDiv.scrollHeight;
-  }
 
-  phoneInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && activeChat) {
-      const text = phoneInput.value.trim();
-      if (text) {
-        sendMessageTo(activeChat, text);
-        phoneInput.value = "";
+    // === BLACK MARKET ===
+
+    const hitboard = document.getElementById('hitboard');
+
+    function renderBlackMarket() {
+      hitboard.innerHTML = '';
+      if (game.player.blackMarketHits.length === 0) {
+        hitboard.textContent = 'No contracts available.';
+        return;
+      }
+      game.player.blackMarketHits.forEach(hit => {
+        const hitEl = createElement('div', {class: 'hit-item'}, 
+          `Target: ${hit.target} | Reward: $${hit.reward}`
+        );
+        hitEl.addEventListener('click', () => {
+          addTerminalLine(`Contract accepted on ${hit.target}.`);
+          game.player.money += hit.reward;
+          // Remove contract after accept
+          game.player.blackMarketHits = game.player.blackMarketHits.filter(h => h !== hit);
+          renderBlackMarket();
+          renderUI();
+        });
+        hitboard.appendChild(hitEl);
+      });
+    }
+
+    // === SETTINGS ===
+
+    const volumeSlider = document.getElementById('volume-slider');
+    const brightnessSlider = document.getElementById('brightness-slider');
+    const qualitySlider = document.getElementById('quality-slider');
+
+    function applySettings() {
+      // For demo, just change brightness background intensity
+      const brightness = brightnessSlider.value;
+      document.body.style.filter = `brightness(${brightness}%)`;
+      // You can add volume and quality effects later
+    }
+
+    volumeSlider.addEventListener('input', e => {
+      game.settings.volume = e.target.value;
+      // Hook for volume effect later
+    });
+    brightnessSlider.addEventListener('input', e => {
+      game.settings.brightness = e.target.value;
+      applySettings();
+    });
+    qualitySlider.addEventListener('input', e => {
+      game.settings.quality = e.target.value;
+      // Hook for quality effect later
+    });
+
+    // === INITIAL PLAYER NAME PROMPT ===
+
+    function askPlayerName() {
+      let name = '';
+      while (!name) {
+        name = prompt('Enter your hacker name:', 'Neo');
+        if (!name) alert('You must enter a valid name.');
+      }
+      game.player.name = name;
+      addTerminalLine(`Welcome, ${name}! Type 'help' for commands.`);
+      // Initialize contacts and black market hits for demo
+      game.player.contacts = [
+        { name: 'Phantom' },
+        { name: 'ZeroCool' },
+        { name: 'Cypher' }
+      ];
+      game.player.blackMarketHits = [
+        { target: 'Phantom', reward: 1000 },
+        { target: 'ZeroCool', reward: 1500 }
+      ];
+      renderContacts();
+      renderBlackMarket();
+      generateServers(30);
+      renderServers();
+      applySettings();
+    }
+
+    // === UI RENDER ===
+
+    function renderUI() {
+      // Update CPU usage bars, money, etc
+      // For simplicity just update terminal with stats when terminal is active
+      if (game.currentTab === 'terminal') {
+        // Add a status bar line if desired
       }
     }
-  });
 
-  function sendMessageTo(contactName, message) {
-    if (!state.phoneChats[contactName]) state.phoneChats[contactName] = [];
-    const nowStr = new Date().toLocaleTimeString();
-    state.phoneChats[contactName].push({sender: playerName, text: message, time: nowStr});
-    renderChatMessages(contactName);
-    // NPC auto-reply simulation (delayed)
-    setTimeout(() => {
-      const reply = generateAutoReply(contactName, message);
-      if (!state.phoneChats[contactName]) state.phoneChats[contactName] = [];
-      const replyTime = new Date().toLocaleTimeString();
-      state.phoneChats[contactName].push({sender: contactName, text: reply, time: replyTime});
-      if (activeChat === contactName) renderChatMessages(contactName);
-    }, 1500 + Math.random()*2000);
-  }
+    // === INIT ===
 
-  function generateAutoReply(name, message) {
-    const replies = {
-      Alice: ["Hi!", "I'm busy hacking, talk later.", "Got your message.", "Sounds good.", "Be careful out there."],
-      Bob: ["Hey!", "On it.", "Roger that.", "Can't talk long.", "What's the target?"],
-      Charlie: ["Hello.", "Check the new servers.", "I'll update the firewall soon.", "Got it.", "Stay safe."],
-      Delta: ["Greetings.", "Running malware scan now.", "I'll ping you soon.", "Thanks.", "Keep your malware updated."],
+    window.onload = () => {
+      askPlayerName();
+      switchTab('terminal');
+      terminalInput.focus();
     };
-    const options = replies[name] || ["Ok.", "Got it.", "Hmm.", "Alright."];
-    return randomChoice(options);
-  }
-
-  // --- BLACK MARKET STORE ---
-
-  const blackMarketList = $("blackmarket-list");
-
-  function loadBlackMarketItems() {
-    state.blackMarketItems = [
-      {id:"malware0", name:"Basic Malware", desc:"Simple malware that steals small amounts of data.", price:100, effect: () => {
-        const player = state.players[playerName];
-        player.malwareInstalled = true;
-        player.malwareProtection = false;
-        logToTerminal("Basic malware installed on your system.", "info");
-      }},
-      {id:"malware1", name:"Advanced Malware", desc:"Stealthy malware that avoids detection better.", price:500, effect: () => {
-        const player = state.players[playerName];
-        player.malwareInstalled = true;
-        player.malwareProtection = true;
-        logToTerminal("Advanced malware installed with stealth protection.", "info");
-      }},
-      {id:"firewall1", name:"Firewall Upgrade", desc:"Increase your firewall level to defend better.", price:750, effect: () => {
-        const player = state.players[playerName];
-        // just a demo, no effect yet
-        logToTerminal("Firewall upgraded, better defense enabled.", "info");
-      }},
-      {id:"cpuup", name:"CPU Booster", desc:"Increase max CPU by 20 units.", price:900, effect: () => {
-        state.cpuMax += 20;
-        logToTerminal("CPU capacity increased by 20 units.", "info");
-      }},
-      {id:"screenshare", name:"Screen Sharing Tool", desc:"Allows sharing your screen logs with friends.", price:300, effect: () => {
-        logToTerminal("Screen sharing enabled.", "info");
-      }},
-    ];
-  }
-
-  function renderBlackMarket() {
-    blackMarketList.innerHTML = "";
-    state.blackMarketItems.forEach(item => {
-      const div = createEl("div", {cls: "blackmarket-item"});
-      div.tabIndex = 0;
-      div.setAttribute("role", "button");
-      div.setAttribute("aria-label", `Buy ${item.name} for $${item.price}`);
-      div.innerHTML = `<h3>${item.name}</h3><p>${item.desc}</p><p><b>Price:</b> $${item.price}</p>`;
-      div.addEventListener("click", () => {
-        purchaseItem(item.id);
-      });
-      div.addEventListener("keydown", e => {
-        if (e.key === "Enter" || e.key === " ") {
-          purchaseItem(item.id);
-          e.preventDefault();
-        }
-      });
-      blackMarketList.appendChild(div);
-    });
-  }
-
-  function purchaseItem(itemId) {
-    const item = state.blackMarketItems.find(i => i.id === itemId);
-    if (!item) return;
-    const player = state.players[playerName];
-    if (player.funds < item.price) {
-      alert("Insufficient funds.");
-      return;
-    }
-    player.funds -= item.price;
-    player.blackMarketPurchased.push(itemId);
-    item.effect();
-    logToTerminal(`Purchased item: ${item.name} for $${item.price}`, "system");
-  }
-
-  // --- SETTINGS HANDLING ---
-
-  const settingResolution = $("setting-resolution");
-  const settingVolume = $("setting-volume");
-  const settingTerminalColor = $("setting-terminal-color");
-
-  function applySettings() {
-    const color = settingTerminalColor.value;
-    switch (color) {
-      case "green":
-        terminalOutput.style.color = "#0f0";
-        terminalInput.style.color = "#0f0";
-        terminalInput.style.background = "#001000cc";
-        break;
-      case "blue":
-        terminalOutput.style.color = "#0af";
-        terminalInput.style.color = "#0af";
-        terminalInput.style.background = "#001022cc";
-        break;
-      case "cyan":
-        terminalOutput.style.color = "#0ff";
-        terminalInput.style.color = "#0ff";
-        terminalInput.style.background = "#002033cc";
-        break;
-      case "purple":
-        terminalOutput.style.color = "#a0a";
-        terminalInput.style.color = "#a0a";
-        terminalInput.style.background = "#220022cc";
-        break;
-      default:
-        terminalOutput.style.color = "#0f0";
-        terminalInput.style.color = "#0f0";
-        terminalInput.style.background = "#001000cc";
-    }
-  }
-
-  settingResolution.addEventListener("change", () => {
-    state.settings.resolution = settingResolution.value;
-    // For demo: we do not actually change screen size
-    logToTerminal(`Resolution changed to ${state.settings.resolution}`, "system");
-  });
-  settingVolume.addEventListener("input", () => {
-    state.settings.volume = settingVolume.value;
-    logToTerminal(`Volume set to ${state.settings.volume}`, "system");
-  });
-  settingTerminalColor.addEventListener("change", () => {
-    state.settings.terminalColor = settingTerminalColor.value;
-    applySettings();
-  });
-
-  // --- INITIALIZATION ---
-
-  function init() {
-    renderServersList();
-    selectServer(state.currentServer);
-    renderPhoneContacts();
-    loadBlackMarketItems();
-    renderBlackMarket();
-    applySettings();
-    logToTerminal("Welcome to HackerSim v1.0! Type 'help' for commands.", "system");
-  }
-
-  init();
-
-})();
-</script>
-
+  </script>
 </body>
 </html>
