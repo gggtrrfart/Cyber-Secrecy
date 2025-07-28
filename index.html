@@ -1,774 +1,441 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Cyber Secrecy Desktop</title>
-<style>
-  /* Reset and base */
-  * {
-    box-sizing: border-box;
-  }
-  body, html {
-    margin: 0; padding: 0; height: 100%;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #0e1b2a, #162b43);
-    color: #eee;
-    overflow: hidden;
-    user-select: none;
-  }
+  <meta charset="UTF-8" />
+  <title>Cyber Secrecy</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'JetBrains Mono', monospace;
+      background-color: #0b0f12;
+      color: #00ff00;
+      overflow: hidden;
+    }
 
-  /* Desktop Background */
-  #desktop {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-    background: url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1920&q=80') no-repeat center center/cover;
-    filter: brightness(0.2);
-  }
-  #desktop-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(10,40,70,0.8), rgba(5,10,30,0.9));
-  }
+    #app {
+      display: flex;
+      height: 100vh;
+      flex-direction: column;
+    }
 
-  /* Desktop icons container */
-  #icons {
-    position: absolute;
-    top: 40px;
-    left: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-    z-index: 10;
-    user-select: none;
-  }
+    header {
+      background: #081014;
+      padding: 10px;
+      text-align: center;
+      font-size: 1.5em;
+      border-bottom: 2px solid #00ff00;
+      color: #00ff00;
+    }
 
-  /* Each desktop icon */
-  .desktop-icon {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-    width: 80px;
-    color: #0ff;
-    text-shadow:
-      0 0 5px #0ffaaaff,
-      0 0 10px #0ffcccff;
-    transition: color 0.2s ease;
-  }
-  .desktop-icon:hover {
-    color: #fff;
-    text-shadow:
-      0 0 8px #0ff,
-      0 0 20px #0ffeee;
-  }
-  .desktop-icon svg {
-    width: 48px;
-    height: 48px;
-    margin-bottom: 6px;
-    fill: currentColor;
-  }
-  .desktop-icon span {
-    font-size: 0.9rem;
-    text-align: center;
-  }
+    nav {
+      display: flex;
+      background-color: #0d1419;
+      border-bottom: 1px solid #00ff00;
+    }
 
-  /* Windows container */
-  #windows {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    overflow: hidden;
-    user-select: text;
-  }
+    nav button {
+      flex: 1;
+      padding: 12px;
+      background: none;
+      border: none;
+      color: #00ff00;
+      font-weight: bold;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
 
-  /* Window style */
-  .window {
-    position: absolute;
-    top: 80px;
-    left: 100px;
-    width: 720px;
-    height: 480px;
-    background: #121b2aee;
-    border: 1px solid #00ffcc;
-    box-shadow:
-      0 0 10px #00ffccaa;
-    border-radius: 6px;
-    display: flex;
-    flex-direction: column;
-    color: #0ff;
-    font-size: 14px;
-    z-index: 100;
-  }
+    nav button:hover,
+    nav button.active {
+      background-color: #1a282f;
+    }
 
-  /* Window title bar */
-  .window-header {
-    background: #002233;
-    padding: 8px 12px;
-    font-weight: 700;
-    user-select: none;
-    color: #0ff;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    text-shadow: 0 0 10px #0ff;
-  }
+    #content {
+      flex: 1;
+      position: relative;
+    }
 
-  /* Window buttons */
-  .window-buttons {
-    display: flex;
-    gap: 10px;
-  }
-  .window-btn {
-    width: 18px; height: 18px;
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 0 5px #0ff;
-  }
-  .window-btn.close {
-    background: #ff5555;
-  }
-  .window-btn.minimize {
-    background: #ffaa00;
-  }
-  .window-btn:hover {
-    filter: brightness(1.3);
-  }
+    .tab {
+      display: none;
+      height: 100%;
+      overflow-y: auto;
+      padding: 10px;
+      box-sizing: border-box;
+    }
 
-  /* Window content */
-  .window-content {
-    flex: 1;
-    background: #0a1624;
-    padding: 12px;
-    overflow-y: auto;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-    color: #0ff;
-    text-shadow: 0 0 5px #0ff;
-  }
+    .tab.active {
+      display: block;
+    }
 
-  /* Terminal specific tweaks */
-  .terminal {
-    background: #001217;
-    height: 100%;
-    border-radius: 4px;
-    padding: 8px;
-    font-size: 15px;
-    color: #0f0;
-    overflow-y: auto;
-    white-space: pre-wrap;
-  }
+    #terminal {
+      height: 100%;
+    }
 
-  /* Scrollbar styling */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  ::-webkit-scrollbar-track {
-    background: #001217;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #00ffccaa;
-    border-radius: 8px;
-  }
+    .chatbox {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
 
-  /* Input bar style */
-  .input-bar {
-    margin-top: 10px;
-    display: flex;
-    gap: 8px;
-  }
-  .input-bar input, .input-bar textarea {
-    flex-grow: 1;
-    background: #002233;
-    border: none;
-    border-radius: 4px;
-    color: #0ff;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
-    padding: 6px 10px;
-    resize: vertical;
-  }
-  .input-bar button {
-    background: #00bb99;
-    border: none;
-    border-radius: 4px;
-    color: #001f1a;
-    font-weight: 700;
-    padding: 6px 12px;
-    cursor: pointer;
-    text-shadow: none;
-    transition: background-color 0.2s ease;
-  }
-  .input-bar button:hover {
-    background-color: #00ffcc;
-  }
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      background-color: #101a1f;
+      padding: 10px;
+      font-size: 0.95em;
+      line-height: 1.4;
+    }
 
-  /* Scroll container for servers */
-  .servers-list {
-    max-height: 400px;
-    overflow-y: auto;
-  }
+    .input-area {
+      display: flex;
+      border-top: 1px solid #00ff00;
+    }
 
-  /* Contact list for phone */
-  .contacts-list {
-    max-height: 320px;
-    overflow-y: auto;
-    border-bottom: 1px solid #00ffcc;
-    margin-bottom: 8px;
-  }
-  .contact-item {
-    padding: 6px 8px;
-    border-bottom: 1px solid #004040;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .contact-item:hover {
-    background-color: #004040aa;
-  }
-  .contact-icon {
-    width: 24px;
-    height: 24px;
-    background: #00ffcc;
-    border-radius: 50%;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #003322;
-    font-weight: 700;
-    font-family: monospace;
-  }
+    .input-area input {
+      flex: 1;
+      background: #000;
+      color: #0f0;
+      padding: 8px;
+      border: none;
+      font-family: inherit;
+    }
 
-  /* Chat window */
-  .chat-window {
-    height: 280px;
-    overflow-y: auto;
-    background: #001922;
-    border-radius: 4px;
-    padding: 10px;
-    margin-bottom: 8px;
-    font-size: 13px;
-    line-height: 1.4;
-  }
-  .chat-message {
-    margin-bottom: 8px;
-  }
-  .chat-message .sender {
-    font-weight: 700;
-    color: #00ffcc;
-  }
-  .chat-message .text {
-    margin-left: 12px;
-  }
+    .input-area button {
+      padding: 8px 12px;
+      background-color: #001f00;
+      color: #0f0;
+      border: none;
+      cursor: pointer;
+    }
 
-  /* Marketplace listing */
-  .marketplace-listing {
-    background: #003030cc;
-    border: 1px solid #00ffcc;
-    padding: 8px;
-    margin-bottom: 8px;
-    border-radius: 4px;
-  }
-  .marketplace-listing button {
-    background: #007744;
-    padding: 4px 8px;
-    color: #0ff;
-    border: none;
-    cursor: pointer;
-    border-radius: 4px;
-  }
-  .marketplace-listing button:hover {
-    background: #00aa77;
-  }
-</style>
+    .server-entry {
+      background: #111;
+      margin: 6px 0;
+      padding: 8px;
+      border: 1px solid #0f0;
+      cursor: pointer;
+    }
+
+    .editor-box {
+      width: 100%;
+      height: 70%;
+      background: #000;
+      color: #0f0;
+      border: 1px solid #0f0;
+      font-family: monospace;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    .market-box input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 8px;
+      background: #000;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+    }
+
+    .market-box button {
+      margin-top: 8px;
+      padding: 8px;
+      background: #001f00;
+      color: #0f0;
+      border: none;
+      cursor: pointer;
+    }
+
+    #tutorial-popup {
+      position: absolute;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #001010;
+      color: #00ff00;
+      padding: 20px;
+      border: 2px solid #00ff00;
+      z-index: 1000;
+      text-align: center;
+    }
+
+    #tutorial-popup button {
+      margin: 10px;
+      padding: 6px 14px;
+      background: #002800;
+      color: #00ff00;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-
-<div id="desktop">
-  <div id="desktop-overlay"></div>
-
-  <!-- Desktop Icons -->
-  <div id="icons" aria-label="Desktop Icons">
-    <div class="desktop-icon" data-window="terminal-window" tabindex="0" role="button" aria-pressed="false" title="Terminal">
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-      </svg>
-      <span>Terminal</span>
-    </div>
-    <div class="desktop-icon" data-window="servers-window" tabindex="0" role="button" aria-pressed="false" title="Servers">
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2" fill="none"/>
-        <rect x="5" y="14" width="14" height="6" stroke="currentColor" stroke-width="2" fill="none" rx="2" ry="2"/>
-      </svg>
-      <span>Servers</span>
-    </div>
-    <div class="desktop-icon" data-window="phone-window" tabindex="0" role="button" aria-pressed="false" title="Phone (Fmail)">
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M3 5h18v14H3z" fill="none" stroke="currentColor" stroke-width="2" rx="2" ry="2"/>
-        <path d="M3 5l9 7 9-7" fill="none" stroke="currentColor" stroke-width="2"/>
-      </svg>
-      <span>Fmail</span>
-    </div>
-    <div class="desktop-icon" data-window="editor-window" tabindex="0" role="button" aria-pressed="false" title="Editor (VS Code)">
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M3 3l18 9-18 9z" fill="none" stroke="currentColor" stroke-width="2"/>
-      </svg>
-      <span>Editor</span>
-    </div>
-    <div class="desktop-icon" data-window="market-window" tabindex="0" role="button" aria-pressed="false" title="Black Market">
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
-        <path d="M6 12h12M12 6v12" stroke="currentColor" stroke-width="2" />
-      </svg>
-      <span>Market</span>
+  <div id="app">
+    <header>Cyber Secrecy OS</header>
+    <nav>
+      <button class="tab-btn active" data-tab="terminal-tab">Terminal</button>
+      <button class="tab-btn" data-tab="servers-tab">Servers</button>
+      <button class="tab-btn" data-tab="editor-tab">Editor</button>
+      <button class="tab-btn" data-tab="phone-tab">Phone</button>
+      <button class="tab-btn" data-tab="market-tab">Black Market</button>
+    </nav>
+    <div id="content">
+      <div id="terminal-tab" class="tab active">
+        <div id="terminal"></div>
+      </div>
+      <div id="servers-tab" class="tab">
+        <div id="servers-list"></div>
+        <button onclick="reloadServers()">Reload</button>
+      </div>
+      <div id="editor-tab" class="tab">
+        <textarea id="editor-code" class="editor-box">// Write malware here</textarea>
+        <button onclick="saveEditor()">Save</button>
+      </div>
+      <div id="phone-tab" class="tab">
+        <div class="chatbox">
+          <div class="messages" id="chat-log"></div>
+          <div class="input-area">
+            <input type="text" id="chat-input" placeholder="Type message..." />
+            <button onclick="sendMessage()">Send</button>
+          </div>
+        </div>
+      </div>
+      <div id="market-tab" class="tab">
+        <div class="market-box">
+          <input id="market-data" placeholder="Enter data to sell..." />
+          <button onclick="sellData()">Sell Data</button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Windows -->
-  <div id="windows" aria-live="polite">
-    <!-- Terminal Window -->
-    <section class="window" id="terminal-window" style="display:none;" aria-label="Terminal Window" role="region" tabindex="0">
-      <div class="window-header">
-        Terminal
-        <div class="window-buttons">
-          <div class="window-btn minimize" aria-label="Minimize Terminal" tabindex="0"></div>
-          <div class="window-btn close" aria-label="Close Terminal" tabindex="0"></div>
-        </div>
-      </div>
-      <div class="window-content" id="terminal-content">
-        <!-- Terminal content will go here -->
-        <pre class="terminal" id="terminal-output"></pre>
-        <div class="input-bar">
-          <input type="text" id="terminal-input" placeholder="Enter command..." autocomplete="off" spellcheck="false" />
-          <button id="terminal-send">Send</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Servers Window -->
-    <section class="window" id="servers-window" style="display:none;" aria-label="Servers Window" role="region" tabindex="0">
-      <div class="window-header">
-        Servers
-        <div class="window-buttons">
-          <div class="window-btn minimize" aria-label="Minimize Servers" tabindex="0"></div>
-          <div class="window-btn close" aria-label="Close Servers" tabindex="0"></div>
-        </div>
-      </div>
-      <div class="window-content" id="servers-content">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-          <h3 style="margin:0; color:#0ff;">Known Servers</h3>
-          <button id="servers-reload" style="background:#007766; border:none; border-radius:4px; padding:4px 8px; color:#0ff; cursor:pointer;">Reload</button>
-        </div>
-        <div class="servers-list" id="servers-list" tabindex="0" aria-label="List of servers"></div>
-      </div>
-    </section>
-
-    <!-- Phone (Fmail) Window -->
-    <section class="window" id="phone-window" style="display:none;" aria-label="Phone Window" role="region" tabindex="0">
-      <div class="window-header">
-        Fmail
-        <div class="window-buttons">
-          <div class="window-btn minimize" aria-label="Minimize Phone" tabindex="0"></div>
-          <div class="window-btn close" aria-label="Close Phone" tabindex="0"></div>
-        </div>
-      </div>
-      <div class="window-content" id="phone-content" style="display:flex; flex-direction: column; height: 100%;">
-        <div class="contacts-list" id="contacts-list" tabindex="0" aria-label="Contacts List"></div>
-        <div class="chat-window" id="chat-window" tabindex="0" aria-label="Chat Window"></div>
-        <div class="input-bar" style="margin-top:auto;">
-          <input type="text" id="chat-input" placeholder="Type message..." autocomplete="off" spellcheck="false" />
-          <button id="chat-send">Send</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Editor Window -->
-    <section class="window" id="editor-window" style="display:none;" aria-label="Editor Window" role="region" tabindex="0">
-      <div class="window-header">
-        Editor
-        <div class="window-buttons">
-          <div class="window-btn minimize" aria-label="Minimize Editor" tabindex="0"></div>
-          <div class="window-btn close" aria-label="Close Editor" tabindex="0"></div>
-        </div>
-      </div>
-      <div class="window-content" id="editor-content" style="display:flex; flex-direction: column; height: 100%;">
-        <select id="file-select" style="margin-bottom: 8px; background:#002233; color:#0ff; border:none; border-radius:4px; padding:6px;">
-          <!-- Dynamically filled -->
-        </select>
-        <textarea id="editor-textarea" style="flex-grow:1; background:#001a2a; color:#0ff; font-family:'JetBrains Mono', monospace; font-size:14px; padding:10px; border:none; border-radius:4px; resize:none;" spellcheck="false"></textarea>
-        <div class="input-bar" style="margin-top: 8px;">
-          <button id="editor-save">Save</button>
-          <button id="editor-clear">Clear</button>
-          <button id="editor-run">Run</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Black Market Window -->
-    <section class="window" id="market-window" style="display:none;" aria-label="Black Market Window" role="region" tabindex="0">
-      <div class="window-header">
-        Black Market
-        <div class="window-buttons">
-          <div class="window-btn minimize" aria-label="Minimize Market" tabindex="0"></div>
-          <div class="window-btn close" aria-label="Close Market" tabindex="0"></div>
-        </div>
-      </div>
-      <div class="window-content" id="market-content" style="display:flex; flex-direction: column; height: 100%;">
-        <div id="market-listings" style="overflow-y:auto; flex-grow:1;"></div>
-        <div class="input-bar" style="margin-top:8px;">
-          <input type="text" id="market-input" placeholder="Enter data to sell..." autocomplete="off" spellcheck="false" />
-          <button id="market-sell">Sell</button>
-        </div>
-      </div>
-    </section>
+  <!-- Tutorial Prompt -->
+  <div id="tutorial-popup" style="display: none;">
+    <p>Welcome to Cyber Secrecy.<br>Would you like to start the tutorial?</p>
+    <button onclick="startTutorial()">Yes</button>
+    <button onclick="skipTutorial()">Skip</button>
   </div>
-</div>
 
+  <!-- External libs -->
+  <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
 <script>
-  // State
-  let openWindows = {};
-
-  // Desktop icon click open window
-  document.querySelectorAll('.desktop-icon').forEach(icon => {
-    icon.addEventListener('click', () => {
-      const winId = icon.dataset.window;
-      openWindow(winId);
-    });
-    icon.addEventListener('keydown', (e) => {
-      if(e.key === 'Enter' || e.key === ' ') {
-        const winId = icon.dataset.window;
-        openWindow(winId);
-      }
-    });
-  });
-
-  // Open window function
-  function openWindow(id) {
-    if(openWindows[id]) {
-      // bring to front
-      bringToFront(document.getElementById(id));
-      return;
+  const term = new Terminal({
+    cursorBlink: true,
+    fontSize: 16,
+    fontFamily: '"JetBrains Mono", monospace',
+    theme: {
+      background: '#0a0a0a',
+      foreground: '#00ff00',
+      cursor: '#00ff00',
+      selectionBackground: 'rgba(0, 255, 0, 0.3)'
     }
-    const win = document.getElementById(id);
-    if(!win) return;
-    win.style.display = 'flex';
-    openWindows[id] = true;
-    bringToFront(win);
+  });
+
+  let commandBuffer = '';
+  let commandHistory = [];
+  let historyIndex = 0;
+  const PROMPT = '>| ';
+  let malwareScripts = {};
+  let currentChat = "Spectre";
+  let chatHistory = [];
+
+  // === Tutorial ===
+  const tutorialPopup = document.getElementById("tutorial-popup");
+  window.addEventListener('load', () => {
+    tutorialPopup.style.display = 'block';
+  });
+
+  function startTutorial() {
+    tutorialPopup.style.display = 'none';
+    print("Tutorial starting...");
+    print("Type 'help' to see available commands.");
   }
 
-  // Bring a window to front by z-index
-  let zIndexCounter = 100;
-  function bringToFront(win) {
-    zIndexCounter++;
-    win.style.zIndex = zIndexCounter;
+  function skipTutorial() {
+    tutorialPopup.style.display = 'none';
+    print("You skipped the tutorial. Type 'help' if you need assistance.");
   }
 
-  // Close and minimize buttons
-  document.querySelectorAll('.window .window-btn.close').forEach(btn => {
+  // === Terminal ===
+  term.open(document.getElementById('terminal'));
+  function print(text = '') {
+    term.writeln(text);
+  }
+
+  function prompt() {
+    term.write('\r\n' + PROMPT);
+  }
+
+  function clearTerminal() {
+    term.clear();
+  }
+
+  function handleCommand(cmd) {
+    const parts = cmd.trim().split(' ');
+    const base = parts[0];
+    const arg = parts.slice(1).join(' ');
+
+    switch (base) {
+      case 'help':
+        print("Available commands: clear, run <script>, ls");
+        break;
+      case 'clear':
+        clearTerminal();
+        break;
+      case 'ls':
+        print(Object.keys(malwareScripts).join('  ') || "(no scripts)");
+        break;
+      case 'run':
+        if (!arg) {
+          print("Usage: run <script>");
+        } else if (!(arg in malwareScripts)) {
+          print("No such script.");
+        } else {
+          print("Running " + arg + "...");
+          print("Malware active on selected server.");
+        }
+        break;
+      default:
+        print("Unknown command.");
+    }
+
+    prompt();
+  }
+
+  term.onKey(e => {
+    const ev = e.domEvent;
+    const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
+
+    if (ev.key === 'Enter') {
+      term.write('\r\n');
+      handleCommand(commandBuffer);
+      if (commandBuffer.trim()) commandHistory.push(commandBuffer);
+      historyIndex = commandHistory.length;
+      commandBuffer = '';
+    } else if (ev.key === 'Backspace') {
+      if (commandBuffer.length > 0) {
+        commandBuffer = commandBuffer.slice(0, -1);
+        term.write('\b \b');
+      }
+    } else if (ev.key === 'ArrowUp') {
+      if (historyIndex > 0) {
+        historyIndex--;
+        const prev = commandHistory[historyIndex];
+        term.write('\r' + PROMPT + prev + ' '.repeat(commandBuffer.length - prev.length));
+        commandBuffer = prev;
+      }
+    } else if (ev.key === 'ArrowDown') {
+      if (historyIndex < commandHistory.length - 1) {
+        historyIndex++;
+        const next = commandHistory[historyIndex];
+        term.write('\r' + PROMPT + next + ' '.repeat(commandBuffer.length - next.length));
+        commandBuffer = next;
+      }
+    } else if (printable) {
+      commandBuffer += ev.key;
+      term.write(ev.key);
+    }
+  });
+
+  print("Welcome");
+  prompt();
+
+  // === Tabs ===
+  document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const win = btn.closest('.window');
-      if(!win) return;
-      win.style.display = 'none';
-      delete openWindows[win.id];
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(btn.dataset.tab).classList.add('active');
+      btn.classList.add('active');
     });
   });
-  document.querySelectorAll('.window .window-btn.minimize').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const win = btn.closest('.window');
-      if(!win) return;
-      win.style.display = 'none';
-      // Note: Could add minimize to taskbar later
-      delete openWindows[win.id];
-    });
-  });
 
-  // Bring window to front on click
-  document.querySelectorAll('.window').forEach(win => {
-    win.addEventListener('mousedown', () => bringToFront(win));
-  });
-
-  // --- Placeholder data & logic ---
-
-  // Servers data
-  let servers = [];
-  function generateRandomServer(id) {
-    const names = ['Omega Hub', 'Gamma Cloud', 'Sigma Node', 'Delta Server', 'Alpha Core', 'Epsilon Net'];
-    const ranks = [1,2,3,4,5];
-    const vulnerabilities = ['None', 'Low', 'Medium', 'High', 'Critical'];
+  // === Servers ===
+  const serversList = document.getElementById('servers-list');
+  function genRandomServer() {
+    const id = Math.floor(Math.random() * 1000);
+    const rank = Math.floor(Math.random() * 10);
+    const vuln = Math.random();
+    const alert = Math.random();
     return {
-      id: id,
-      name: `${names[Math.floor(Math.random()*names.length)]} ${id}`,
-      rank: ranks[Math.floor(Math.random()*ranks.length)],
-      vulnerability: vulnerabilities[Math.floor(Math.random()*vulnerabilities.length)],
-      cameras: Math.random() > 0.6 ? 'Online' : 'Offline',
-      alert: ['Low','Medium','High'][Math.floor(Math.random()*3)],
-      hacked: Math.random() > 0.7,
-      description: "Server holds sensitive info, hack it carefully."
+      name: `AlphaCore-${id}`,
+      rank,
+      vulnerability: vuln,
+      alertLevel: alert,
+      hacked: false
     };
   }
-  function loadServers() {
-    servers = [];
-    for(let i=1; i<=20; i++) {
-      servers.push(generateRandomServer(i));
-    }
-    renderServers();
-  }
-  function renderServers() {
-    const list = document.getElementById('servers-list');
-    list.innerHTML = '';
-    servers.forEach(server => {
-      const div = document.createElement('div');
-      div.tabIndex = 0;
-      div.className = 'server-item';
-      div.style.borderBottom = '1px solid #00ffcc44';
-      div.style.padding = '8px 4px';
-      div.style.cursor = 'pointer';
-      div.style.color = server.hacked ? '#0f0' : '#0ff';
-      div.title = server.description;
-      div.innerHTML = `
-        <strong>${server.name}</strong><br/>
-        Rank: ${server.rank} | Vulnerability: ${server.vulnerability} | Cameras: ${server.cameras} | Alert: ${server.alert} | Hacked: ${server.hacked ? 'Yes' : 'No'}
+
+  let servers = [];
+  function reloadServers() {
+    serversList.innerHTML = '';
+    servers = Array.from({ length: 10 }, genRandomServer);
+    servers.forEach((s, i) => {
+      const el = document.createElement('div');
+      el.className = 'server-entry';
+      el.innerHTML = `
+        <strong>${s.name}</strong><br/>
+        Rank: ${s.rank}<br/>
+        Vulnerability: ${(s.vulnerability * 100).toFixed(0)}%<br/>
+        Alert Level: ${s.alertLevel < 0.33 ? 'Low' : s.alertLevel < 0.66 ? 'Medium' : 'High'}<br/>
+        Status: ${s.hacked ? 'Hacked' : 'Secure'}
       `;
-      div.addEventListener('click', () => {
-        alert(`Attempt to hack ${server.name} - Not implemented yet`);
-      });
-      list.appendChild(div);
+      el.onclick = () => {
+        alert(`Viewing ${s.name}. Write and run a script to hack.`);
+      };
+      serversList.appendChild(el);
     });
   }
-  document.getElementById('servers-reload').addEventListener('click', () => {
-    loadServers();
-  });
+  reloadServers();
 
-  // Load servers on start
-  loadServers();
-
-  // Phone contacts & chat
-  const contacts = [
-    {id:'spectre', name:'Spectre'},
-    {id:'nova', name:'Nova'},
-    {id:'zero', name:'Zero'},
-    {id:'shadow', name:'Shadow'},
-  ];
-  let currentContact = null;
-  const chatHistories = {};
-
-  function renderContacts() {
-    const list = document.getElementById('contacts-list');
-    list.innerHTML = '';
-    contacts.forEach(c => {
-      const div = document.createElement('div');
-      div.className = 'contact-item';
-      div.tabIndex = 0;
-      div.innerHTML = `<div class="contact-icon">${c.name[0]}</div>${c.name}`;
-      div.addEventListener('click', () => {
-        currentContact = c.id;
-        renderChat();
-      });
-      list.appendChild(div);
-    });
+  // === Editor ===
+  function saveEditor() {
+    const code = document.getElementById("editor-code").value.trim();
+    const filename = prompt("Save as script name (example: breach.js)");
+    if (!filename) return;
+    malwareScripts[filename] = code;
+    alert("Saved script: " + filename);
   }
 
-  function renderChat() {
-    const chatWindow = document.getElementById('chat-window');
-    chatWindow.innerHTML = '';
-    if(!currentContact) {
-      chatWindow.innerHTML = '<em>Select a contact to chat.</em>';
-      return;
-    }
-    const history = chatHistories[currentContact] || [];
-    history.forEach(msg => {
-      const div = document.createElement('div');
-      div.className = 'chat-message';
-      div.innerHTML = `<span class="sender">${msg.from}:</span><span class="text">${msg.text}</span>`;
-      chatWindow.appendChild(div);
-    });
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+  // === Chat ===
+  function sendMessage() {
+    const input = document.getElementById("chat-input");
+    const val = input.value.trim();
+    if (!val) return;
+
+    chatHistory.push({ sender: "You", text: val });
+    addChatMessage("You", val);
+
+    const response = getAIResponse(val);
+    chatHistory.push({ sender: "Spectre", text: response });
+    setTimeout(() => addChatMessage("Spectre", response), 500);
+    input.value = '';
   }
 
-  function sendMessage(text) {
-    if(!currentContact) return;
-    if(!chatHistories[currentContact]) chatHistories[currentContact] = [];
-    chatHistories[currentContact].push({from: 'You', text});
-    // Simulate reply
-    setTimeout(() => {
-      chatHistories[currentContact].push({from: contacts.find(c=>c.id===currentContact).name, text: getAutoReply(text)});
-      renderChat();
-    }, 1000);
+  function addChatMessage(sender, text) {
+    const log = document.getElementById("chat-log");
+    const div = document.createElement("div");
+    div.textContent = `${sender}: ${text}`;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
   }
 
-  function getAutoReply(text) {
-    const lower = text.toLowerCase();
-    if(lower.includes('hi') || lower.includes('hello')) return "Hey, what's up?";
-    if(lower.includes('sus') || lower.includes('alert')) return "I'm watching my cams, be careful.";
-    if(lower.includes('hack')) return "You better not be messing with my servers!";
+  function getAIResponse(input) {
+    const lowered = input.toLowerCase();
+    if (lowered.includes("hack")) return "You better not be messing with my servers.";
+    if (lowered.includes("fbi")) return "Keep them off your trail.";
+    if (lowered.includes("hi") || lowered.includes("hello")) return "Hey.";
     return "Roger that.";
   }
 
-  document.getElementById('chat-send').addEventListener('click', () => {
-    const input = document.getElementById('chat-input');
-    if(input.value.trim() === '') return;
-    sendMessage(input.value.trim());
-    input.value = '';
-    input.focus();
-  });
-  document.getElementById('chat-input').addEventListener('keydown', e => {
-    if(e.key === 'Enter') {
-      e.preventDefault();
-      document.getElementById('chat-send').click();
-    }
-  });
-
-  renderContacts();
-
-  // Editor: simple file system simulation
-  let files = {
-    "malware1.js": "// Malware script 1\nconsole.log('Executing malware1');",
-    "malware2.js": "// Malware script 2\nconsole.log('Executing malware2');",
-  };
-  let currentFile = "malware1.js";
-
-  function renderFileList() {
-    const select = document.getElementById('file-select');
-    select.innerHTML = '';
-    for(const fname in files) {
-      const opt = document.createElement('option');
-      opt.value = fname;
-      opt.textContent = fname;
-      if(fname === currentFile) opt.selected = true;
-      select.appendChild(opt);
-    }
-  }
-  function renderEditor() {
-    document.getElementById('editor-textarea').value = files[currentFile] || '';
-  }
-
-  document.getElementById('file-select').addEventListener('change', e => {
-    currentFile = e.target.value;
-    renderEditor();
-  });
-
-  document.getElementById('editor-save').addEventListener('click', () => {
-    files[currentFile] = document.getElementById('editor-textarea').value;
-    alert(`Saved ${currentFile}`);
-  });
-  document.getElementById('editor-clear').addEventListener('click', () => {
-    if(confirm('Clear all text in editor?')) {
-      document.getElementById('editor-textarea').value = '';
-      files[currentFile] = '';
-    }
-  });
-  document.getElementById('editor-run').addEventListener('click', () => {
-    alert(`Running script ${currentFile}:\n\n${files[currentFile]}`);
-    // Here you can plug in malware running logic
-  });
-
-  renderFileList();
-  renderEditor();
-
-  // Black Market listings simulation
-  let marketListings = [
-    {id: 1, description: 'Credentials for Gamma Cloud 514', price: 500},
-    {id: 2, description: 'Exploit script for Omega Hub 539', price: 1200},
-    {id: 3, description: 'Fmail inbox dump', price: 300},
-  ];
-
-  function renderMarketListings() {
-    const container = document.getElementById('market-listings');
-    container.innerHTML = '';
-    marketListings.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'marketplace-listing';
-      div.innerHTML = `
-        <strong>${item.description}</strong><br/>
-        Price: $${item.price.toLocaleString()}<br/>
-        <button data-id="${item.id}">Buy</button>
-      `;
-      div.querySelector('button').addEventListener('click', () => {
-        alert(`Bought "${item.description}" for $${item.price.toLocaleString()}`);
-        // Here handle buying logic, remove listing, etc
-      });
-      container.appendChild(div);
-    });
-  }
-
-  document.getElementById('market-sell').addEventListener('click', () => {
-    const val = document.getElementById('market-input').value.trim();
-    if(!val) return alert('Enter data to sell!');
-    // Fake pricing logic
-    const price = Math.floor(Math.random() * 1000) + 100;
-    marketListings.push({
-      id: marketListings.length + 1,
-      description: val,
-      price,
-    });
-    renderMarketListings();
-    document.getElementById('market-input').value = '';
-  });
-
-  renderMarketListings();
-
-  // Terminal placeholder logic
-  const terminalOutput = document.getElementById('terminal-output');
-  const terminalInput = document.getElementById('terminal-input');
-  const terminalSend = document.getElementById('terminal-send');
-  let terminalHistory = [];
-  let terminalHistoryIndex = -1;
-
-  function appendTerminalLine(line) {
-    terminalOutput.textContent += line + '\n';
-    terminalOutput.scrollTop = terminalOutput.scrollHeight;
-  }
-  appendTerminalLine('Welcome to Cyber Secrecy Terminal');
-  appendTerminalLine('Type help for commands.');
-
-  terminalSend.addEventListener('click', () => {
-    processTerminalCommand(terminalInput.value.trim());
-    terminalInput.value = '';
-    terminalHistoryIndex = -1;
-  });
-  terminalInput.addEventListener('keydown', e => {
-    if(e.key === 'Enter') {
-      e.preventDefault();
-      terminalSend.click();
-    } else if(e.key === 'ArrowUp') {
-      if(terminalHistory.length === 0) return;
-      if(terminalHistoryIndex < 0) terminalHistoryIndex = terminalHistory.length - 1;
-      else terminalHistoryIndex = Math.max(0, terminalHistoryIndex - 1);
-      terminalInput.value = terminalHistory[terminalHistoryIndex];
-    } else if(e.key === 'ArrowDown') {
-      if(terminalHistory.length === 0) return;
-      if(terminalHistoryIndex === -1) return;
-      terminalHistoryIndex = Math.min(terminalHistory.length -1, terminalHistoryIndex +1);
-      terminalInput.value = terminalHistory[terminalHistoryIndex] || '';
-    }
-  });
-
-  function processTerminalCommand(cmd) {
-    if(!cmd) return;
-    appendTerminalLine(`> ${cmd}`);
-    terminalHistory.push(cmd);
-    // Simplified commands
-    switch(cmd.toLowerCase()) {
-      case 'help':
-        appendTerminalLine('Available commands: help, clear, servers, whoami');
-        break;
-      case 'clear':
-        terminalOutput.textContent = '';
-        break;
-      case 'servers':
-        appendTerminalLine('Use the Servers window to browse and hack servers.');
-        break;
-      case 'whoami':
-        appendTerminalLine('You are: Player');
-        break;
-      default:
-        appendTerminalLine(`Unknown command: ${cmd}`);
-    }
+  // === Market ===
+  function sellData() {
+    const val = document.getElementById("market-data").value.trim();
+    if (!val) return alert("No data entered.");
+    const worth = Math.floor(Math.random() * 300) + 50;
+    alert("Sold data for $" + worth);
+    document.getElementById("market-data").value = '';
   }
 </script>
-
 </body>
 </html>
