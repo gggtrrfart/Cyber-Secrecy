@@ -4,236 +4,275 @@
   <meta charset="UTF-8" />
   <title>Cyber Secrecy</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
-<style>
-  html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    background-color: #000;
-    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-    overflow: hidden;
-  }
-
-  #terminal-container {
-    width: 100vw;
-    height: 100vh;
-    background: #050505;
-    color: #00ff00;
-  }
-
-  .xterm {
-    padding: 12px;
-    font-size: 16px;
-    line-height: 1.4;
-  }
-
-  ::selection {
-    background: rgba(0, 255, 0, 0.4);
-  }
-
-  ::-webkit-scrollbar {
-    width: 0px;
-    height: 0px;
-  }
-</style>
-
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #001000, #003300);
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      overflow: hidden;
+      color: #00ff00;
+    }
+  
+    #header {
+      position: fixed;
+      top: 0;
+      width: 100vw;
+      background-color: #001a00;
+      border-bottom: 1px solid #00ff00;
+      color: #00ff00;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.4rem;
+      padding: 8px 0;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 6px #00ff00;
+      z-index: 10;
+    }
+  
+    #footer {
+      position: fixed;
+      bottom: 0;
+      width: 100vw;
+      background-color: #001a00;
+      border-top: 1px solid #00ff00;
+      color: #00ff00;
+      text-align: center;
+      font-size: 0.9rem;
+      padding: 6px 0;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 4px #00ff00;
+      z-index: 10;
+    }
+  
+    #terminal-container {
+      position: absolute;
+      top: 40px;    /* space for header */
+      bottom: 30px; /* space for footer */
+      width: 100vw;
+      background: #050505;
+      box-shadow: 0 0 20px #00ff00aa;
+    }
+  
+    .xterm {
+      padding: 12px;
+      font-size: 16px;
+      line-height: 1.4;
+    }
+  
+    ::selection {
+      background: rgba(0, 255, 0, 0.4);
+    }
+  
+    ::-webkit-scrollbar {
+      width: 0px;
+      height: 0px;
+    }
+  </style>
 </head>
 <body>
-<div id="terminal-container"></div>
+  <div id="header">Cyber Secrecy</div>
+  <div id="terminal-container"></div>
+  <div id="footer">Type "help" for commands or "edit readme.txt" to get started</div>
 
-<script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/js-interpreter@latest/interpreter.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-interpreter@latest/interpreter.js"></script>
 
-<script>
-  const { Terminal } = window;
-  const term = new Terminal({
-    cursorBlink: true,
-    disableStdin: false,
-    scrollback: 5000,
-    fontSize: 14,
-    fontFamily: '"Consolas", "Courier New", monospace',
-    theme: {
-      background: '#0a0a0a',
-      foreground: '#00ff00',
-      cursor: '#00ff00',
-      selectionBackground: 'rgba(0, 255, 0, 0.3)'
-    }
-  });
-
-  term.open(document.getElementById('terminal-container'));
-
-  const PROMPT = '>| ';
-  let commandBuffer = '';
-  let mode = "command"; // "command" or "edit"
-  let currentEditLines = [];
-  let currentEditFile = "";
-
-  const files = {
-    'readme.txt': 'Welcome to Cyber Secrecy.\nCommands: ls, cat, edit, run.\nIn scripts, try: print(), scan(), probe(), cameraStatus(), hack()'
-  };
-
-  const fakeServers = {
-    'alpha.net': { vulnerable: true, cameraOn: true, hacked: false },
-    'beta.sys': { vulnerable: false, cameraOn: false, hacked: false },
-    'gamma.io': { vulnerable: true, cameraOn: false, hacked: false }
-  };
-
-  function scrollBottom() {
-    setTimeout(() => term.scrollToBottom(), 0);
-  }
-
-  function prompt() {
-    term.write('\r\n' + PROMPT);
-    scrollBottom();
-  }
-
-  function print(text = '') {
-    term.writeln(text);
-    scrollBottom();
-  }
-
-  function listFiles() {
-    const names = Object.keys(files);
-    print(names.length ? names.join('  ') : '(no files)');
-  }
-
-  function catFile(filename) {
-    print(filename in files ? files[filename] : `cat: no such file: ${filename}`);
-  }
-
-  function editFile(filename) {
-    print(`Editing ${filename}. End with '.' on a line.`);
-    mode = "edit";
-    currentEditLines = [];
-    currentEditFile = filename;
-    term.write('\r\n> ');
-  }
-
-  function runFile(filename) {
-    if (!(filename in files)) {
-      print(`run: no such file: ${filename}`);
-      prompt();
-      return;
-    }
-
-    print(`Running ${filename}...`);
-
-    const interpreter = new Interpreter(files[filename], function(interpreter, globalObject) {
-      interpreter.setProperty(globalObject, 'print',
-        interpreter.createNativeFunction(function(text) {
-          print(String(text));
-        })
-      );
-
-      interpreter.setProperty(globalObject, 'scan',
-        interpreter.createNativeFunction(function() {
-          return Object.keys(fakeServers).join('\n');
-        })
-      );
-
-      interpreter.setProperty(globalObject, 'probe',
-        interpreter.createNativeFunction(function(server) {
-          server = String(server);
-          if (!fakeServers[server]) return 'UNKNOWN HOST';
-          return fakeServers[server].vulnerable ? 'VULNERABLE' : 'SECURE';
-        })
-      );
-
-      interpreter.setProperty(globalObject, 'cameraStatus',
-        interpreter.createNativeFunction(function(server) {
-          server = String(server);
-          if (!fakeServers[server]) return 'UNKNOWN HOST';
-          return fakeServers[server].cameraOn ? 'ONLINE' : 'OFFLINE';
-        })
-      );
-
-      interpreter.setProperty(globalObject, 'hack',
-        interpreter.createNativeFunction(function(server) {
-          server = String(server);
-          if (!fakeServers[server]) return 'FAIL: NO HOST';
-          const s = fakeServers[server];
-          if (s.hacked) return 'ALREADY HACKED';
-          if (!s.vulnerable) return 'FAIL: SECURE';
-          if (s.cameraOn) return 'FAIL: CAMERAS ONLINE';
-          s.hacked = true;
-          return 'SUCCESS: ' + server + ' BREACHED';
-        })
-      );
+  <script>
+    const { Terminal } = window;
+    const term = new Terminal({
+      cursorBlink: true,
+      disableStdin: false,
+      scrollback: 5000,
+      fontSize: 14,
+      fontFamily: '"Consolas", "Courier New", monospace',
+      theme: {
+        background: '#0a0a0a',
+        foreground: '#00ff00',
+        cursor: '#00ff00',
+        selectionBackground: 'rgba(0, 255, 0, 0.3)'
+      }
     });
 
-    function runStep() {
-      try {
-        if (interpreter.step()) {
-          setTimeout(runStep, 0);
-        } else {
-          print('Script finished.');
-          prompt();
-        }
-      } catch (err) {
-        print('Script Error: ' + err.message);
+    term.open(document.getElementById('terminal-container'));
+
+    const PROMPT = '>| ';
+    let commandBuffer = '';
+    let mode = "command"; // "command" or "edit"
+    let currentEditLines = [];
+    let currentEditFile = "";
+
+    const files = {
+      'readme.txt': 'Welcome to Cyber Secrecy.\nCommands: ls, cat, edit, run.\nIn scripts, try: print(), scan(), probe(), cameraStatus(), hack()'
+    };
+
+    const fakeServers = {
+      'alpha.net': { vulnerable: true, cameraOn: true, hacked: false },
+      'beta.sys': { vulnerable: false, cameraOn: false, hacked: false },
+      'gamma.io': { vulnerable: true, cameraOn: false, hacked: false }
+    };
+
+    function scrollBottom() {
+      setTimeout(() => term.scrollToBottom(), 0);
+    }
+
+    function prompt() {
+      term.write('\r\n' + PROMPT);
+      scrollBottom();
+    }
+
+    function print(text = '') {
+      term.writeln(text);
+      scrollBottom();
+    }
+
+    function listFiles() {
+      const names = Object.keys(files);
+      print(names.length ? names.join('  ') : '(no files)');
+    }
+
+    function catFile(filename) {
+      print(filename in files ? files[filename] : `cat: no such file: ${filename}`);
+    }
+
+    function editFile(filename) {
+      print(`Editing ${filename}. End with '.' on a line.`);
+      mode = "edit";
+      currentEditLines = [];
+      currentEditFile = filename;
+      term.write('\r\n> ');
+    }
+
+    function runFile(filename) {
+      if (!(filename in files)) {
+        print(`run: no such file: ${filename}`);
         prompt();
+        return;
       }
-    }
 
-    runStep();
-  }
+      print(`Running ${filename}...`);
 
-  function handleCommand(line) {
-    const parts = line.trim().split(' ');
-    const cmd = parts[0];
-    const arg = parts.slice(1).join(' ');
+      const interpreter = new Interpreter(files[filename], function(interpreter, globalObject) {
+        interpreter.setProperty(globalObject, 'print',
+          interpreter.createNativeFunction(function(text) {
+            print(String(text));
+          })
+        );
 
-    switch (cmd) {
-      case 'ls': listFiles(); prompt(); break;
-      case 'cat': catFile(arg); prompt(); break;
-      case 'edit': if (!arg) print('Usage: edit <filename>'); else editFile(arg); break;
-      case 'run': if (!arg) print('Usage: run <filename>'); else runFile(arg); break;
-      case '': prompt(); break;
-      default: print(`Unknown command: ${cmd}`); prompt();
-    }
-  }
+        interpreter.setProperty(globalObject, 'scan',
+          interpreter.createNativeFunction(function() {
+            return Object.keys(fakeServers).join('\n');
+          })
+        );
 
-  term.onKey(e => {
-    const ev = e.domEvent;
-    const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
+        interpreter.setProperty(globalObject, 'probe',
+          interpreter.createNativeFunction(function(server) {
+            server = String(server);
+            if (!fakeServers[server]) return 'UNKNOWN HOST';
+            return fakeServers[server].vulnerable ? 'VULNERABLE' : 'SECURE';
+          })
+        );
 
-    if (ev.key === 'Enter') {
-      term.write('\r\n');
-      if (mode === "command") {
-        handleCommand(commandBuffer.trim());
-        commandBuffer = '';
-      } else if (mode === "edit") {
-        const line = commandBuffer.trimEnd();
-        commandBuffer = '';
-        if (line === '.') {
-          files[currentEditFile] = currentEditLines.join('\n');
-          print(`Saved ${currentEditFile}`);
-          mode = "command";
-          currentEditFile = "";
-          currentEditLines = [];
+        interpreter.setProperty(globalObject, 'cameraStatus',
+          interpreter.createNativeFunction(function(server) {
+            server = String(server);
+            if (!fakeServers[server]) return 'UNKNOWN HOST';
+            return fakeServers[server].cameraOn ? 'ONLINE' : 'OFFLINE';
+          })
+        );
+
+        interpreter.setProperty(globalObject, 'hack',
+          interpreter.createNativeFunction(function(server) {
+            server = String(server);
+            if (!fakeServers[server]) return 'FAIL: NO HOST';
+            const s = fakeServers[server];
+            if (s.hacked) return 'ALREADY HACKED';
+            if (!s.vulnerable) return 'FAIL: SECURE';
+            if (s.cameraOn) return 'FAIL: CAMERAS ONLINE';
+            s.hacked = true;
+            return 'SUCCESS: ' + server + ' BREACHED';
+          })
+        );
+      });
+
+      function runStep() {
+        try {
+          if (interpreter.step()) {
+            setTimeout(runStep, 0);
+          } else {
+            print('Script finished.');
+            prompt();
+          }
+        } catch (err) {
+          print('Script Error: ' + err.message);
           prompt();
-        } else {
-          currentEditLines.push(line);
-          term.write('> ');
         }
       }
-    } else if (ev.key === 'Backspace') {
-      if (commandBuffer.length > 0) {
-        commandBuffer = commandBuffer.slice(0, -1);
-        term.write('\b \b');
-      }
-    } else if (printable) {
-      commandBuffer += ev.key;
-      term.write(ev.key);
+
+      runStep();
     }
 
-    scrollBottom();
-  });
+    function handleCommand(line) {
+      const parts = line.trim().split(' ');
+      const cmd = parts[0];
+      const arg = parts.slice(1).join(' ');
 
-  // Show just the welcome readme text on load
-  print(files['readme.txt']);
-  prompt();
+      switch (cmd) {
+        case 'ls': listFiles(); prompt(); break;
+        case 'cat': catFile(arg); prompt(); break;
+        case 'edit': if (!arg) print('Usage: edit <filename>'); else editFile(arg); break;
+        case 'run': if (!arg) print('Usage: run <filename>'); else runFile(arg); break;
+        case '': prompt(); break;
+        case 'help':
+          print('Available commands: ls, cat, edit, run, help');
+          prompt();
+          break;
+        default: print(`Unknown command: ${cmd}`); prompt();
+      }
+    }
 
-</script>
+    term.onKey(e => {
+      const ev = e.domEvent;
+      const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
+
+      if (ev.key === 'Enter') {
+        term.write('\r\n');
+        if (mode === "command") {
+          handleCommand(commandBuffer.trim());
+          commandBuffer = '';
+        } else if (mode === "edit") {
+          const line = commandBuffer.trimEnd();
+          commandBuffer = '';
+          if (line === '.') {
+            files[currentEditFile] = currentEditLines.join('\n');
+            print(`Saved ${currentEditFile}`);
+            mode = "command";
+            currentEditFile = "";
+            currentEditLines = [];
+            prompt();
+          } else {
+            currentEditLines.push(line);
+            term.write('> ');
+          }
+        }
+      } else if (ev.key === 'Backspace') {
+        if (commandBuffer.length > 0) {
+          commandBuffer = commandBuffer.slice(0, -1);
+          term.write('\b \b');
+        }
+      } else if (printable) {
+        commandBuffer += ev.key;
+        term.write(ev.key);
+      }
+
+      scrollBottom();
+    });
+
+    // Show just the welcome readme text on load
+    print(files['readme.txt']);
+    prompt();
+
+  </script>
 </body>
 </html>
