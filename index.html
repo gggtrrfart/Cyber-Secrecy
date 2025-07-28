@@ -56,11 +56,11 @@
 `;
 
 function showLogo() {
-  print(logo);
-  print(files['readme.txt']);
+  print(logo.trim());   // print the logo without leading/trailing blank lines
+  print('');            // add a blank line to separate logo from readme
+  print(files['readme.txt']); // print the readme welcome text
   prompt();
 }
-
   const { Terminal } = window;
   const term = new Terminal({
     cursorBlink: true,
