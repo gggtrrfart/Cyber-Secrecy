@@ -2,1143 +2,772 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Cyber Secrecy</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cyber Secrecy Desktop</title>
 <style>
-  html, body {
-    height: 100%;
-    margin: 0; padding: 0;
-    background: linear-gradient(135deg, #001000, #003300);
-    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-    color: #00ff00;
+  /* Reset and base */
+  * {
+    box-sizing: border-box;
+  }
+  body, html {
+    margin: 0; padding: 0; height: 100%;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0e1b2a, #162b43);
+    color: #eee;
     overflow: hidden;
-  }
-  #header, #footer {
-    position: fixed; left: 0; width: 100vw;
-    background-color: #001a00;
-    color: #00ff00;
-    font-family: 'Courier New', monospace;
-    text-shadow: 0 0 6px #00ff00;
-    z-index: 20;
-    user-select:none;
-  }
-  #header {
-    top: 0; height: 40px;
-    font-weight: bold;
-    font-size: 1.5rem;
-    text-align: center;
-    line-height: 40px;
-    border-bottom: 1px solid #00ff00;
-  }
-  #footer {
-    bottom: 0; height: 30px;
-    font-size: 0.9rem;
-    text-align: center;
-    line-height: 30px;
-    border-top: 1px solid #00ff00;
+    user-select: none;
   }
 
-  #main {
-    position: absolute;
-    top: 40px; bottom: 30px; left: 0; right: 0;
-    display: flex;
-    flex-direction: column;
-  }
-
-  #tab-buttons {
-    background: #002200;
-    border-bottom: 1px solid #00ff00;
-    padding: 6px 10px;
-    display: flex;
-    gap: 12px;
-  }
-  #tab-buttons button {
-    background: transparent;
-    border: 1.5px solid #00ff00;
-    color: #00ff00;
-    padding: 6px 14px;
-    font-family: monospace;
-    font-weight: bold;
-    font-size: 1rem;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background 0.25s;
-  }
-  #tab-buttons button.active,
-  #tab-buttons button:hover {
-    background: #004400;
-  }
-
-  #content-area {
-    flex: 1;
+  /* Desktop Background */
+  #desktop {
     position: relative;
-    overflow: hidden;
-    background: #050505;
-    box-shadow: 0 0 20px #00ff00aa;
-    color: #00ff00;
-    font-family: monospace;
-    display: flex;
-    flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+    background: url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1920&q=80') no-repeat center center/cover;
+    filter: brightness(0.2);
   }
-
-  /* Terminal tab */
-  #terminal-tab {
-    flex: 1;
-  }
-
-  /* Servers tab */
-  #servers-tab {
+  #desktop-overlay {
     position: absolute;
     inset: 0;
-    overflow-y: auto;
-    padding: 12px;
-    display: none;
+    background: linear-gradient(135deg, rgba(10,40,70,0.8), rgba(5,10,30,0.9));
   }
-  #servers-tab.active {
-    display: block;
+
+  /* Desktop icons container */
+  #icons {
+    position: absolute;
+    top: 40px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    z-index: 10;
+    user-select: none;
   }
-  #servers-list {
-    max-height: 100%;
-    overflow-y: auto;
-  }
-  .server-item {
-    border: 1px solid #008800;
-    margin-bottom: 8px;
-    padding: 8px 12px;
-    border-radius: 4px;
-    background: #003300dd;
-    cursor: default;
-    user-select:none;
-  }
-  .server-name {
-    font-weight: bold;
-    font-size: 1.1rem;
-    margin-bottom: 4px;
-  }
-  .server-status {
-    font-size: 0.9rem;
-    line-height: 1.3;
-    white-space: pre-line;
-  }
-  #servers-reload {
-    position: fixed;
-    top: 48px;
-    right: 16px;
-    padding: 6px 12px;
-    background: #004400;
-    border: 1.5px solid #00ff00;
-    border-radius: 4px;
+
+  /* Each desktop icon */
+  .desktop-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     cursor: pointer;
-    user-select:none;
-    font-weight: bold;
-    font-family: monospace;
+    width: 80px;
+    color: #0ff;
+    text-shadow:
+      0 0 5px #0ffaaaff,
+      0 0 10px #0ffcccff;
+    transition: color 0.2s ease;
+  }
+  .desktop-icon:hover {
+    color: #fff;
+    text-shadow:
+      0 0 8px #0ff,
+      0 0 20px #0ffeee;
+  }
+  .desktop-icon svg {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 6px;
+    fill: currentColor;
+  }
+  .desktop-icon span {
+    font-size: 0.9rem;
+    text-align: center;
   }
 
-  /* Phone tab */
-  #phone-tab {
+  /* Windows container */
+  #windows {
     position: absolute;
-    inset: 0;
-    background: #001a00;
-    display: none;
-    flex-direction: column;
-    color: #00ff00;
+    top: 0; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
+    user-select: text;
   }
-  #phone-tab.active {
+
+  /* Window style */
+  .window {
+    position: absolute;
+    top: 80px;
+    left: 100px;
+    width: 720px;
+    height: 480px;
+    background: #121b2aee;
+    border: 1px solid #00ffcc;
+    box-shadow:
+      0 0 10px #00ffccaa;
+    border-radius: 6px;
     display: flex;
+    flex-direction: column;
+    color: #0ff;
+    font-size: 14px;
+    z-index: 100;
   }
-  #contacts-list {
-    width: 220px;
-    background: #002200;
+
+  /* Window title bar */
+  .window-header {
+    background: #002233;
+    padding: 8px 12px;
+    font-weight: 700;
+    user-select: none;
+    color: #0ff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-shadow: 0 0 10px #0ff;
+  }
+
+  /* Window buttons */
+  .window-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  .window-btn {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 5px #0ff;
+  }
+  .window-btn.close {
+    background: #ff5555;
+  }
+  .window-btn.minimize {
+    background: #ffaa00;
+  }
+  .window-btn:hover {
+    filter: brightness(1.3);
+  }
+
+  /* Window content */
+  .window-content {
+    flex: 1;
+    background: #0a1624;
+    padding: 12px;
     overflow-y: auto;
-    border-right: 1px solid #00ff00;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: #0ff;
+    text-shadow: 0 0 5px #0ff;
   }
-  #contacts-list .contact-item {
+
+  /* Terminal specific tweaks */
+  .terminal {
+    background: #001217;
+    height: 100%;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 15px;
+    color: #0f0;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #001217;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #00ffccaa;
+    border-radius: 8px;
+  }
+
+  /* Input bar style */
+  .input-bar {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+  }
+  .input-bar input, .input-bar textarea {
+    flex-grow: 1;
+    background: #002233;
+    border: none;
+    border-radius: 4px;
+    color: #0ff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    padding: 6px 10px;
+    resize: vertical;
+  }
+  .input-bar button {
+    background: #00bb99;
+    border: none;
+    border-radius: 4px;
+    color: #001f1a;
+    font-weight: 700;
+    padding: 6px 12px;
+    cursor: pointer;
+    text-shadow: none;
+    transition: background-color 0.2s ease;
+  }
+  .input-bar button:hover {
+    background-color: #00ffcc;
+  }
+
+  /* Scroll container for servers */
+  .servers-list {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  /* Contact list for phone */
+  .contacts-list {
+    max-height: 320px;
+    overflow-y: auto;
+    border-bottom: 1px solid #00ffcc;
+    margin-bottom: 8px;
+  }
+  .contact-item {
+    padding: 6px 8px;
+    border-bottom: 1px solid #004040;
+    cursor: pointer;
     display: flex;
     align-items: center;
-    padding: 8px 12px;
-    border-bottom: 1px solid #004400;
-    cursor: pointer;
-    transition: background 0.2s;
+    gap: 8px;
   }
-  #contacts-list .contact-item:hover,
-  #contacts-list .contact-item.active {
-    background: #004400;
+  .contact-item:hover {
+    background-color: #004040aa;
   }
   .contact-icon {
-    width: 28px; height: 28px;
-    background: #008800;
+    width: 24px;
+    height: 24px;
+    background: #00ffcc;
     border-radius: 50%;
-    margin-right: 12px;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
+    color: #003322;
+    font-weight: 700;
     font-family: monospace;
-    color: #002200;
-    user-select:none;
-  }
-  #chat-area {
-    flex: 1;
-    padding: 12px;
-    background: #001100;
-    display: flex;
-    flex-direction: column;
-  }
-  #chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding-right: 6px;
-    font-size: 0.95rem;
-    line-height: 1.3;
-  }
-  .message {
-    margin-bottom: 10px;
-    max-width: 70%;
-    word-wrap: break-word;
-  }
-  .message.sent {
-    align-self: flex-end;
-    background: #004400;
-    padding: 6px 10px;
-    border-radius: 10px 10px 2px 10px;
-  }
-  .message.received {
-    align-self: flex-start;
-    background: #003300;
-    padding: 6px 10px;
-    border-radius: 10px 10px 10px 2px;
-  }
-  .msg-sender {
-    font-weight: bold;
-    font-size: 0.85rem;
-    margin-bottom: 2px;
-  }
-  #chat-input {
-    margin-top: 8px;
-    display: flex;
-  }
-  #chat-input input {
-    flex: 1;
-    padding: 8px 12px;
-    font-size: 1rem;
-    font-family: monospace;
-    border: none;
-    outline: none;
-    background: #002200;
-    color: #00ff00;
-    border-radius: 4px 0 0 4px;
-  }
-  #chat-input button {
-    background: #004400;
-    border: 1.5px solid #00ff00;
-    border-left: none;
-    padding: 8px 16px;
-    font-family: monospace;
-    cursor: pointer;
-    border-radius: 0 4px 4px 0;
-    font-weight: bold;
-    color: #00ff00;
-  }
-  #chat-input button:hover {
-    background: #005500;
   }
 
-  /* Black Market tab */
-  #blackmarket-tab {
-    position: absolute;
-    inset: 0;
-    background: #001a00;
-    color: #00ff00;
-    display: none;
-    flex-direction: column;
-    padding: 12px;
-  }
-  #blackmarket-tab.active {
-    display: flex;
-  }
-  #market-input {
-    display: flex;
-    margin-top: 10px;
-  }
-  #market-input input {
-    flex: 1;
-    font-family: monospace;
-    font-size: 1rem;
-    padding: 8px 12px;
-    border-radius: 4px 0 0 4px;
-    border: none;
-    background: #002200;
-    color: #00ff00;
-    outline: none;
-  }
-  #market-input button {
-    padding: 8px 14px;
-    font-family: monospace;
-    border: 1.5px solid #00ff00;
-    background: #004400;
-    color: #00ff00;
-    border-radius: 0 4px 4px 0;
-    cursor: pointer;
-    font-weight: bold;
-  }
-  #market-input button:hover {
-    background: #005500;
-  }
-  #data-list {
-    flex: 1;
+  /* Chat window */
+  .chat-window {
+    height: 280px;
     overflow-y: auto;
-    margin-top: 12px;
-    border: 1px solid #00ff00;
-    padding: 8px 12px;
-    font-size: 0.9rem;
-    white-space: pre-wrap;
-  }
-  #hit-board {
-    margin-top: 16px;
-    border-top: 1px solid #00ff00;
-    padding-top: 12px;
-  }
-  #hit-board h3 {
-    margin: 0 0 8px 0;
-    font-weight: bold;
-  }
-  .hit-target {
-    border: 1px solid #00aa00;
-    margin-bottom: 8px;
-    padding: 8px 12px;
+    background: #001922;
     border-radius: 4px;
-    background: #003300dd;
-    cursor: pointer;
-    user-select:none;
-  }
-  .hit-target:hover {
-    background: #005500dd;
-  }
-
-  /* Editor tab */
-  #editor-tab {
-    position: absolute;
-    inset: 0;
-    background: #001a00;
-    display: none;
-    flex-direction: column;
-    padding: 12px;
-    color: #00ff00;
-  }
-  #editor-tab.active {
-    display: flex;
-  }
-  #code-textarea {
-    flex: 1;
-    width: 100%;
-    background: #002200;
-    border: 1.5px solid #00ff00;
-    color: #00ff00;
-    font-family: monospace;
-    font-size: 1.2rem;
-    padding: 12px;
-    resize: none;
-    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+    font-size: 13px;
     line-height: 1.4;
-    outline: none;
   }
-  #editor-buttons {
-    margin-top: 8px;
-    display: flex;
-    gap: 12px;
+  .chat-message {
+    margin-bottom: 8px;
   }
-  #editor-buttons button {
-    flex: 1;
-    padding: 10px 0;
-    font-family: monospace;
-    font-size: 1rem;
-    font-weight: bold;
-    border-radius: 6px;
-    border: 1.5px solid #00ff00;
-    background: transparent;
-    color: #00ff00;
-    cursor: pointer;
-    transition: background 0.25s;
+  .chat-message .sender {
+    font-weight: 700;
+    color: #00ffcc;
   }
-  #editor-buttons button:hover {
-    background: #004400;
+  .chat-message .text {
+    margin-left: 12px;
   }
 
-  /* Terminal input area adjustments */
-  .xterm .xterm-viewport {
-    font-size: 1.1rem !important;
+  /* Marketplace listing */
+  .marketplace-listing {
+    background: #003030cc;
+    border: 1px solid #00ffcc;
+    padding: 8px;
+    margin-bottom: 8px;
+    border-radius: 4px;
   }
-  /* Increase input line font size */
-  #terminal-container .xterm-cursor {
-    font-size: 1.3rem !important;
+  .marketplace-listing button {
+    background: #007744;
+    padding: 4px 8px;
+    color: #0ff;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .marketplace-listing button:hover {
+    background: #00aa77;
   }
 </style>
 </head>
 <body>
 
-<div id="header">Cyber Secrecy</div>
-<div id="main">
+<div id="desktop">
+  <div id="desktop-overlay"></div>
 
-  <div id="tab-buttons">
-    <button id="btn-terminal" class="active" title="Terminal">Terminal</button>
-    <button id="btn-servers" title="Servers">Servers</button>
-    <button id="btn-phone" title="Phone">Phone</button>
-    <button id="btn-blackmarket" title="Black Market">Black Market</button>
-    <button id="btn-editor" title="Editor">Editor</button>
+  <!-- Desktop Icons -->
+  <div id="icons" aria-label="Desktop Icons">
+    <div class="desktop-icon" data-window="terminal-window" tabindex="0" role="button" aria-pressed="false" title="Terminal">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      </svg>
+      <span>Terminal</span>
+    </div>
+    <div class="desktop-icon" data-window="servers-window" tabindex="0" role="button" aria-pressed="false" title="Servers">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2" fill="none"/>
+        <rect x="5" y="14" width="14" height="6" stroke="currentColor" stroke-width="2" fill="none" rx="2" ry="2"/>
+      </svg>
+      <span>Servers</span>
+    </div>
+    <div class="desktop-icon" data-window="phone-window" tabindex="0" role="button" aria-pressed="false" title="Phone (Fmail)">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M3 5h18v14H3z" fill="none" stroke="currentColor" stroke-width="2" rx="2" ry="2"/>
+        <path d="M3 5l9 7 9-7" fill="none" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      <span>Fmail</span>
+    </div>
+    <div class="desktop-icon" data-window="editor-window" tabindex="0" role="button" aria-pressed="false" title="Editor (VS Code)">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M3 3l18 9-18 9z" fill="none" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      <span>Editor</span>
+    </div>
+    <div class="desktop-icon" data-window="market-window" tabindex="0" role="button" aria-pressed="false" title="Black Market">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+        <path d="M6 12h12M12 6v12" stroke="currentColor" stroke-width="2" />
+      </svg>
+      <span>Market</span>
+    </div>
   </div>
 
-  <div id="content-area">
-    <!-- Terminal -->
-    <div id="terminal-tab">
-      <div id="terminal-container" style="height:100%;"></div>
-    </div>
-
-    <!-- Servers -->
-    <div id="servers-tab">
-      <div id="servers-list"></div>
-      <button id="servers-reload" title="Reload Servers">Reload</button>
-    </div>
-
-    <!-- Phone -->
-    <div id="phone-tab">
-      <div style="display:flex; height: 100%;">
-        <div id="contacts-list"></div>
-        <div id="chat-area">
-          <div id="chat-messages"></div>
-          <div id="chat-input">
-            <input type="text" id="chat-text" placeholder="Type message..." autocomplete="off" />
-            <button id="chat-send">Send</button>
-          </div>
+  <!-- Windows -->
+  <div id="windows" aria-live="polite">
+    <!-- Terminal Window -->
+    <section class="window" id="terminal-window" style="display:none;" aria-label="Terminal Window" role="region" tabindex="0">
+      <div class="window-header">
+        Terminal
+        <div class="window-buttons">
+          <div class="window-btn minimize" aria-label="Minimize Terminal" tabindex="0"></div>
+          <div class="window-btn close" aria-label="Close Terminal" tabindex="0"></div>
         </div>
       </div>
-    </div>
-
-    <!-- Black Market -->
-    <div id="blackmarket-tab">
-      <div>Type info to sell:</div>
-      <div id="market-input">
-        <input id="market-text" type="text" placeholder="Enter data or target to sell..." autocomplete="off" />
-        <button id="market-sell">Sell</button>
+      <div class="window-content" id="terminal-content">
+        <!-- Terminal content will go here -->
+        <pre class="terminal" id="terminal-output"></pre>
+        <div class="input-bar">
+          <input type="text" id="terminal-input" placeholder="Enter command..." autocomplete="off" spellcheck="false" />
+          <button id="terminal-send">Send</button>
+        </div>
       </div>
-      <div id="data-list" readonly></div>
-      <div id="hit-board">
-        <h3>Hit Board (Bonus Targets)</h3>
-        <div id="hit-list"></div>
-      </div>
-    </div>
+    </section>
 
-    <!-- Editor -->
-    <div id="editor-tab">
-      <textarea id="code-textarea" spellcheck="false" placeholder="Write or edit your scripts here..."></textarea>
-      <div id="editor-buttons">
-        <button id="editor-save">Save</button>
-        <button id="editor-clear">Clear</button>
+    <!-- Servers Window -->
+    <section class="window" id="servers-window" style="display:none;" aria-label="Servers Window" role="region" tabindex="0">
+      <div class="window-header">
+        Servers
+        <div class="window-buttons">
+          <div class="window-btn minimize" aria-label="Minimize Servers" tabindex="0"></div>
+          <div class="window-btn close" aria-label="Close Servers" tabindex="0"></div>
+        </div>
       </div>
-    </div>
+      <div class="window-content" id="servers-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+          <h3 style="margin:0; color:#0ff;">Known Servers</h3>
+          <button id="servers-reload" style="background:#007766; border:none; border-radius:4px; padding:4px 8px; color:#0ff; cursor:pointer;">Reload</button>
+        </div>
+        <div class="servers-list" id="servers-list" tabindex="0" aria-label="List of servers"></div>
+      </div>
+    </section>
 
+    <!-- Phone (Fmail) Window -->
+    <section class="window" id="phone-window" style="display:none;" aria-label="Phone Window" role="region" tabindex="0">
+      <div class="window-header">
+        Fmail
+        <div class="window-buttons">
+          <div class="window-btn minimize" aria-label="Minimize Phone" tabindex="0"></div>
+          <div class="window-btn close" aria-label="Close Phone" tabindex="0"></div>
+        </div>
+      </div>
+      <div class="window-content" id="phone-content" style="display:flex; flex-direction: column; height: 100%;">
+        <div class="contacts-list" id="contacts-list" tabindex="0" aria-label="Contacts List"></div>
+        <div class="chat-window" id="chat-window" tabindex="0" aria-label="Chat Window"></div>
+        <div class="input-bar" style="margin-top:auto;">
+          <input type="text" id="chat-input" placeholder="Type message..." autocomplete="off" spellcheck="false" />
+          <button id="chat-send">Send</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Editor Window -->
+    <section class="window" id="editor-window" style="display:none;" aria-label="Editor Window" role="region" tabindex="0">
+      <div class="window-header">
+        Editor
+        <div class="window-buttons">
+          <div class="window-btn minimize" aria-label="Minimize Editor" tabindex="0"></div>
+          <div class="window-btn close" aria-label="Close Editor" tabindex="0"></div>
+        </div>
+      </div>
+      <div class="window-content" id="editor-content" style="display:flex; flex-direction: column; height: 100%;">
+        <select id="file-select" style="margin-bottom: 8px; background:#002233; color:#0ff; border:none; border-radius:4px; padding:6px;">
+          <!-- Dynamically filled -->
+        </select>
+        <textarea id="editor-textarea" style="flex-grow:1; background:#001a2a; color:#0ff; font-family:'JetBrains Mono', monospace; font-size:14px; padding:10px; border:none; border-radius:4px; resize:none;" spellcheck="false"></textarea>
+        <div class="input-bar" style="margin-top: 8px;">
+          <button id="editor-save">Save</button>
+          <button id="editor-clear">Clear</button>
+          <button id="editor-run">Run</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Black Market Window -->
+    <section class="window" id="market-window" style="display:none;" aria-label="Black Market Window" role="region" tabindex="0">
+      <div class="window-header">
+        Black Market
+        <div class="window-buttons">
+          <div class="window-btn minimize" aria-label="Minimize Market" tabindex="0"></div>
+          <div class="window-btn close" aria-label="Close Market" tabindex="0"></div>
+        </div>
+      </div>
+      <div class="window-content" id="market-content" style="display:flex; flex-direction: column; height: 100%;">
+        <div id="market-listings" style="overflow-y:auto; flex-grow:1;"></div>
+        <div class="input-bar" style="margin-top:8px;">
+          <input type="text" id="market-input" placeholder="Enter data to sell..." autocomplete="off" spellcheck="false" />
+          <button id="market-sell">Sell</button>
+        </div>
+      </div>
+    </section>
   </div>
 </div>
 
-<div id="footer">Type "help" for commands or "edit readme.txt" to get started</div>
-
-<script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/js-interpreter@latest/interpreter.js"></script>
-
 <script>
-(() => {
-  const { Terminal } = window;
+  // State
+  let openWindows = {};
 
-  // Terminal Setup
-  const term = new Terminal({
-    cursorBlink: true,
-    scrollback: 10000,
-    fontSize: 16,
-    fontFamily: '"JetBrains Mono", monospace',
-    theme: {
-      background: '#0a0a0a',
-      foreground: '#00ff00',
-      cursor: '#00ff00',
-      selectionBackground: 'rgba(0, 255, 0, 0.3)'
-    }
-  });
-
-  term.open(document.getElementById('terminal-container'));
-
-  // Tab controls
-  const tabs = {
-    terminal: document.getElementById('terminal-tab'),
-    servers: document.getElementById('servers-tab'),
-    phone: document.getElementById('phone-tab'),
-    blackmarket: document.getElementById('blackmarket-tab'),
-    editor: document.getElementById('editor-tab'),
-  };
-
-  const buttons = {
-    terminal: document.getElementById('btn-terminal'),
-    servers: document.getElementById('btn-servers'),
-    phone: document.getElementById('btn-phone'),
-    blackmarket: document.getElementById('btn-blackmarket'),
-    editor: document.getElementById('btn-editor'),
-  };
-
-  function setActiveTab(tabName) {
-    for (const t in tabs) {
-      tabs[t].classList.toggle('active', t === tabName);
-      buttons[t].classList.toggle('active', t === tabName);
-    }
-    if (tabName === 'terminal') {
-      term.focus();
-    }
-    if(tabName === 'servers') {
-      renderServers();
-    }
-    if(tabName === 'phone') {
-      if (!currentContact) {
-        selectContact(Object.keys(contacts)[0]);
+  // Desktop icon click open window
+  document.querySelectorAll('.desktop-icon').forEach(icon => {
+    icon.addEventListener('click', () => {
+      const winId = icon.dataset.window;
+      openWindow(winId);
+    });
+    icon.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' || e.key === ' ') {
+        const winId = icon.dataset.window;
+        openWindow(winId);
       }
-    }
-    if(tabName === 'blackmarket') {
-      renderHitBoard();
-    }
-    if(tabName === 'editor') {
-      loadEditorContent(currentEditFile || 'readme.txt');
-    }
-  }
-
-  Object.entries(buttons).forEach(([key, btn]) => {
-    btn.onclick = () => setActiveTab(key);
+    });
   });
 
-  setActiveTab('terminal');
-
-  // Scroll helper
-  function scrollBottom(el) {
-    setTimeout(() => {
-      el.scrollTop = el.scrollHeight;
-    }, 0);
+  // Open window function
+  function openWindow(id) {
+    if(openWindows[id]) {
+      // bring to front
+      bringToFront(document.getElementById(id));
+      return;
+    }
+    const win = document.getElementById(id);
+    if(!win) return;
+    win.style.display = 'flex';
+    openWindows[id] = true;
+    bringToFront(win);
   }
 
-  // Command line input handling & history
-  let commandBuffer = '';
-  let commandCursorPos = 0;
-  let commandHistory = [];
-  let historyIndex = -1;
-
-  function refreshCommandLine() {
-    // Clear current line & rewrite commandBuffer with cursor
-    term.write('\x1b[2K\r'); // Clear line and carriage return
-    term.write(PROMPT + commandBuffer);
-    // Move cursor to the correct position:
-    const cursorMove = commandBuffer.length - commandCursorPos;
-    if(cursorMove > 0) term.write('\x1b[' + cursorMove + 'D');
+  // Bring a window to front by z-index
+  let zIndexCounter = 100;
+  function bringToFront(win) {
+    zIndexCounter++;
+    win.style.zIndex = zIndexCounter;
   }
 
-  const PROMPT = '>| ';
+  // Close and minimize buttons
+  document.querySelectorAll('.window .window-btn.close').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const win = btn.closest('.window');
+      if(!win) return;
+      win.style.display = 'none';
+      delete openWindows[win.id];
+    });
+  });
+  document.querySelectorAll('.window .window-btn.minimize').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const win = btn.closest('.window');
+      if(!win) return;
+      win.style.display = 'none';
+      // Note: Could add minimize to taskbar later
+      delete openWindows[win.id];
+    });
+  });
 
-  // Basic filesystem and files
-  const files = {
-    'readme.txt': 'Welcome to Cyber Secrecy.',
-  };
+  // Bring window to front on click
+  document.querySelectorAll('.window').forEach(win => {
+    win.addEventListener('mousedown', () => bringToFront(win));
+  });
 
-  // Editor current file
-  let currentEditFile = 'readme.txt';
+  // --- Placeholder data & logic ---
 
-  // Terminal mode: 'command' or 'edit'
-  let mode = 'command';
-
-  // Editor mode flag (for separate big editor)
-  let isEditorOpen = false;
-
-  // AI hacker/gang contacts system
-  const contacts = {};
-  const gangMembers = new Set();
-
-  // Chats, map contactName -> messages array {from:'you'|'them', text:string}
-  const chats = {};
-
-  // Hacker ranks (1 to 10)
-  const hackerRanks = {};
-
-  // FBI suspicion level (0-100)
-  let fbiSuspicion = 0;
-
-  // Black Market data store
-  let blackMarketData = [];
-
-  // Hit board targets
-  let hitBoardTargets = [];
-
-  // Servers system
+  // Servers data
   let servers = [];
-
-  // Suspicious hacker watchlist (for ratting/pinning crimes)
-  let suspiciousHackers = new Set();
-
-  // Nyl's server special
-  const NYL_SERVER_NAME = 'nyl-server-999';
-  const NYL_SERVER_RANK = 999;
-
-  // -- UTILS --
-
-  function randomChoice(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
-  function randomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-  function generateRandomName() {
-    const parts1 = ['alpha', 'beta', 'gamma', 'delta', 'sigma', 'omega', 'kappa', 'lambda', 'zeta', 'theta'];
-    const parts2 = ['net', 'sys', 'io', 'com', 'org', 'tech', 'dev', 'hub', 'zone', 'cloud'];
-    return randomChoice(parts1) + '-' + randomChoice(parts2) + '-' + randomInt(100, 999);
-  }
-  function getAlertLevelText(level) {
-    if(level < 25) return 'Low';
-    if(level < 50) return 'Moderate';
-    if(level < 75) return 'High';
-    return 'Critical';
-  }
-
-  // -- SERVER GENERATION --
-
-  function generateServer() {
-    // Random vulnerability + camera + alert + hacked + suspicious
+  function generateRandomServer(id) {
+    const names = ['Omega Hub', 'Gamma Cloud', 'Sigma Node', 'Delta Server', 'Alpha Core', 'Epsilon Net'];
+    const ranks = [1,2,3,4,5];
+    const vulnerabilities = ['None', 'Low', 'Medium', 'High', 'Critical'];
     return {
-      name: generateRandomName(),
-      vulnerable: Math.random() < 0.5,
-      cameraOn: Math.random() < 0.5,
-      alertLevel: randomInt(0, 100),
-      hacked: false,
-      suspicious: 0,
+      id: id,
+      name: `${names[Math.floor(Math.random()*names.length)]} ${id}`,
+      rank: ranks[Math.floor(Math.random()*ranks.length)],
+      vulnerability: vulnerabilities[Math.floor(Math.random()*vulnerabilities.length)],
+      cameras: Math.random() > 0.6 ? 'Online' : 'Offline',
+      alert: ['Low','Medium','High'][Math.floor(Math.random()*3)],
+      hacked: Math.random() > 0.7,
+      description: "Server holds sensitive info, hack it carefully."
     };
   }
-
-  function generateServers(count=20) {
+  function loadServers() {
     servers = [];
-    for(let i=0; i<count-1; i++) {
-      servers.push(generateServer());
+    for(let i=1; i<=20; i++) {
+      servers.push(generateRandomServer(i));
     }
-    // Add special Nyl server
-    servers.push({
-      name: NYL_SERVER_NAME,
-      vulnerable: false,
-      cameraOn: false,
-      alertLevel: 0,
-      hacked: false,
-      suspicious: 0,
-      rank: NYL_SERVER_RANK,
-      special: true,
-    });
-  }
-
-  // -- RENDER SERVERS --
-
-  const serversListEl = document.getElementById('servers-list');
-  const serversReloadBtn = document.getElementById('servers-reload');
-
-  function renderServers() {
-    serversListEl.innerHTML = '';
-    servers.forEach(srv => {
-      const div = document.createElement('div');
-      div.className = 'server-item';
-      const rank = srv.rank || randomInt(1, 10);
-      let statusLines = `Rank: ${rank}\n` +
-        `Vulnerability: ${srv.vulnerable ? 'Yes' : 'No'}\n` +
-        `Cameras: ${srv.cameraOn ? 'Online' : 'Offline'}\n` +
-        `Alert Level: ${getAlertLevelText(srv.alertLevel)} (${srv.alertLevel})\n` +
-        `Hacked: ${srv.hacked ? 'Yes' : 'No'}\n` +
-        `Suspicious Activity: ${srv.suspicious}`;
-
-      div.innerHTML = `<div class="server-name">${srv.name}</div>` +
-        `<div class="server-status">${statusLines.replace(/\n/g, '<br>')}</div>`;
-      serversListEl.appendChild(div);
-    });
-  }
-  serversReloadBtn.onclick = () => {
-    generateServers(20);
     renderServers();
-  };
-  // Initial servers
-  generateServers(20);
-
-  // -- PHONE TAB --
-
-  const contactsListEl = document.getElementById('contacts-list');
-  const chatMessagesEl = document.getElementById('chat-messages');
-  const chatInputEl = document.getElementById('chat-text');
-  const chatSendBtn = document.getElementById('chat-send');
-
-  // Generate some contacts including gangs
-  function generateContacts() {
-    const hackerNames = ['Specter', 'Phantom', 'Ghost', 'Cipher', 'Nova', 'Rogue', 'Shade', 'Vortex', 'Glitch', 'Zero'];
-    hackerNames.forEach(name => {
-      contacts[name] = {
-        displayName: name,
-        icon: name[0],
-        rank: randomInt(1, 10),
-        gang: false,
-      };
-      chats[name] = [];
-      hackerRanks[name] = contacts[name].rank;
-    });
-
-    // Create gangs with some contacts
-    // Gang "Shadow Syndicate"
-    const syndicateMembers = ['Specter', 'Phantom', 'Cipher'];
-    syndicateMembers.forEach(m => {
-      contacts[m].gang = 'Shadow Syndicate';
-      gangMembers.add(m);
-    });
-    // Gang "Neon Reapers"
-    const reapersMembers = ['Nova', 'Rogue', 'Shade'];
-    reapersMembers.forEach(m => {
-      contacts[m].gang = 'Neon Reapers';
-      gangMembers.add(m);
+  }
+  function renderServers() {
+    const list = document.getElementById('servers-list');
+    list.innerHTML = '';
+    servers.forEach(server => {
+      const div = document.createElement('div');
+      div.tabIndex = 0;
+      div.className = 'server-item';
+      div.style.borderBottom = '1px solid #00ffcc44';
+      div.style.padding = '8px 4px';
+      div.style.cursor = 'pointer';
+      div.style.color = server.hacked ? '#0f0' : '#0ff';
+      div.title = server.description;
+      div.innerHTML = `
+        <strong>${server.name}</strong><br/>
+        Rank: ${server.rank} | Vulnerability: ${server.vulnerability} | Cameras: ${server.cameras} | Alert: ${server.alert} | Hacked: ${server.hacked ? 'Yes' : 'No'}
+      `;
+      div.addEventListener('click', () => {
+        alert(`Attempt to hack ${server.name} - Not implemented yet`);
+      });
+      list.appendChild(div);
     });
   }
-  generateContacts();
+  document.getElementById('servers-reload').addEventListener('click', () => {
+    loadServers();
+  });
 
-  // Currently selected contact in phone
+  // Load servers on start
+  loadServers();
+
+  // Phone contacts & chat
+  const contacts = [
+    {id:'spectre', name:'Spectre'},
+    {id:'nova', name:'Nova'},
+    {id:'zero', name:'Zero'},
+    {id:'shadow', name:'Shadow'},
+  ];
   let currentContact = null;
+  const chatHistories = {};
 
   function renderContacts() {
-    contactsListEl.innerHTML = '';
-    for(const name in contacts) {
-      const c = contacts[name];
+    const list = document.getElementById('contacts-list');
+    list.innerHTML = '';
+    contacts.forEach(c => {
       const div = document.createElement('div');
       div.className = 'contact-item';
-      if(name === currentContact) div.classList.add('active');
-      div.dataset.name = name;
-      div.innerHTML = `<div class="contact-icon">${c.icon}</div>${c.displayName}` + (c.gang ? ` <span style="font-size:0.8rem; color:#008800;">[${c.gang}]</span>` : '');
-      div.onclick = () => selectContact(name);
-      contactsListEl.appendChild(div);
-    }
-  }
-
-  function selectContact(name) {
-    currentContact = name;
-    renderContacts();
-    renderChat();
-    chatInputEl.focus();
+      div.tabIndex = 0;
+      div.innerHTML = `<div class="contact-icon">${c.name[0]}</div>${c.name}`;
+      div.addEventListener('click', () => {
+        currentContact = c.id;
+        renderChat();
+      });
+      list.appendChild(div);
+    });
   }
 
   function renderChat() {
-    chatMessagesEl.innerHTML = '';
-    if (!currentContact) return;
-    const msgs = chats[currentContact] || [];
-    msgs.forEach(m => {
+    const chatWindow = document.getElementById('chat-window');
+    chatWindow.innerHTML = '';
+    if(!currentContact) {
+      chatWindow.innerHTML = '<em>Select a contact to chat.</em>';
+      return;
+    }
+    const history = chatHistories[currentContact] || [];
+    history.forEach(msg => {
       const div = document.createElement('div');
-      div.className = 'message ' + (m.from === 'you' ? 'sent' : 'received');
-      div.innerHTML = `<div class="msg-sender">${m.from === 'you' ? 'You' : currentContact}</div>${m.text}`;
-      chatMessagesEl.appendChild(div);
+      div.className = 'chat-message';
+      div.innerHTML = `<span class="sender">${msg.from}:</span><span class="text">${msg.text}</span>`;
+      chatWindow.appendChild(div);
     });
-    scrollBottom(chatMessagesEl);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
   }
 
-  // Handle sending messages in phone chat
-  chatSendBtn.onclick = () => {
-    const msg = chatInputEl.value.trim();
-    if(!msg || !currentContact) return;
-    addMessage(currentContact, 'you', msg);
-    chatInputEl.value = '';
-    renderChat();
-
-    // Generate a reply from AI hacker after random delay if suspicious
+  function sendMessage(text) {
+    if(!currentContact) return;
+    if(!chatHistories[currentContact]) chatHistories[currentContact] = [];
+    chatHistories[currentContact].push({from: 'You', text});
+    // Simulate reply
     setTimeout(() => {
-      handleAIReply(currentContact, msg);
-    }, randomInt(700, 1500));
-  };
-
-  // AI replies based on message and suspicion
-  function handleAIReply(contact, msg) {
-    if(!contacts[contact]) return;
-    // Increase suspicion randomly if message contains suspicious keywords
-    const suspiciousWords = ['hack', 'trace', 'FBI', 'rat', 'spy', 'alert', 'camera', 'breach'];
-    const lowered = msg.toLowerCase();
-    let suspiciousInc = 0;
-    suspiciousWords.forEach(w => {
-      if(lowered.includes(w)) suspiciousInc += randomInt(5,15);
-    });
-    if(suspiciousInc > 0) {
-      fbiSuspicion += suspiciousInc;
-      suspiciousHackers.add(contact);
-      updateFooterSuspicion();
-    }
-    // AI message choices vary by suspicion level
-    const suspicion = fbiSuspicion;
-
-    let replyOptions = [
-      "Roger that.",
-      "On it.",
-      "Standing by.",
-      "Got your back.",
-      "Will do.",
-      "Copy.",
-      "Proceed with caution.",
-      "I'm watching the cams.",
-      "Quiet on your end?",
-      "Anything unusual?"
-    ];
-
-    if(suspicion > 70) {
-      replyOptions.push("FBI might be onto us, be careful.");
-      replyOptions.push("Lay low, things are heating up.");
-      replyOptions.push("Too much noise lately.");
-    }
-
-    if(suspicion > 90) {
-      replyOptions.push("They're closing in! Disconnect if you can!");
-      replyOptions.push("I got eyes on you, don't slip up.");
-    }
-
-    // Sometimes AI 'rats' if player hacks the dev server or suspicious
-    if(contact === 'Specter' && suspicion > 85 && Math.random() < 0.3) {
-      replyOptions.push("I've been compromised! They're onto you!");
-      // Could add extra game logic for ratting out
-    }
-
-    const reply = randomChoice(replyOptions);
-    addMessage(contact, 'them', reply);
-    renderChat();
+      chatHistories[currentContact].push({from: contacts.find(c=>c.id===currentContact).name, text: getAutoReply(text)});
+      renderChat();
+    }, 1000);
   }
 
-  // Add message helper
-  function addMessage(contact, from, text) {
-    if(!chats[contact]) chats[contact] = [];
-    chats[contact].push({from, text});
+  function getAutoReply(text) {
+    const lower = text.toLowerCase();
+    if(lower.includes('hi') || lower.includes('hello')) return "Hey, what's up?";
+    if(lower.includes('sus') || lower.includes('alert')) return "I'm watching my cams, be careful.";
+    if(lower.includes('hack')) return "You better not be messing with my servers!";
+    return "Roger that.";
   }
 
-  renderContacts();
-
-  // -- BLACK MARKET --
-
-  const marketTextEl = document.getElementById('market-text');
-  const marketSellBtn = document.getElementById('market-sell');
-  const dataListEl = document.getElementById('data-list');
-  const hitListEl = document.getElementById('hit-list');
-
-  // Data store for selling
-  blackMarketData = [];
-
-  // Add sell data
-  marketSellBtn.onclick = () => {
-    const data = marketTextEl.value.trim();
-    if(!data) return alert('Enter data or hit target to sell.');
-
-    // Evaluate price based on keywords
-    let basePrice = 10;
-    if(data.toLowerCase().includes('password')) basePrice += 50;
-    if(data.toLowerCase().includes('credit')) basePrice += 40;
-    if(data.toLowerCase().includes('server')) basePrice += 30;
-    if(data.toLowerCase().includes('hack')) basePrice += 20;
-    if(data.toLowerCase().includes(NYL_SERVER_NAME)) {
-      alert("You cannot sell info on Nyl's server!");
-      marketTextEl.value = '';
-      return;
-    }
-
-    // Add data with price to black market
-    blackMarketData.push({data, price: basePrice});
-    renderBlackMarketData();
-    marketTextEl.value = '';
-  };
-
-  function renderBlackMarketData() {
-    if(blackMarketData.length === 0) {
-      dataListEl.textContent = '(No data sold yet)';
-      return;
-    }
-    let out = '';
-    blackMarketData.forEach((d,i) => {
-      out += `[${i+1}] Data: ${d.data} - Price: $${d.price}\n`;
-    });
-    dataListEl.textContent = out;
-  }
-
-  // Hit board targets: generate from servers vulnerable & not hacked
-  function renderHitBoard() {
-    hitListEl.innerHTML = '';
-    const hits = servers.filter(s => s.vulnerable && !s.hacked && !s.special).slice(0,5);
-    hits.forEach(hit => {
-      const div = document.createElement('div');
-      div.className = 'hit-target';
-      div.textContent = `${hit.name} [Alert: ${getAlertLevelText(hit.alertLevel)}]`;
-      div.onclick = () => {
-        // Selling hit target info for bonus
-        const price = 100 + hit.alertLevel;
-        blackMarketData.push({data: `Hit contract on ${hit.name}`, price});
-        alert(`Hit contract for ${hit.name} purchased for $${price}!`);
-        renderBlackMarketData();
-      };
-      hitListEl.appendChild(div);
-    });
-  }
-
-  // Initial render
-  renderBlackMarketData();
-  renderHitBoard();
-
-  // -- EDITOR --
-
-  const editorTextarea = document.getElementById('code-textarea');
-  const editorSaveBtn = document.getElementById('editor-save');
-  const editorClearBtn = document.getElementById('editor-clear');
-
-  function loadEditorContent(filename) {
-    if(files[filename] === undefined) {
-      files[filename] = '';
-    }
-    editorTextarea.value = files[filename];
-    currentEditFile = filename;
-  }
-  editorSaveBtn.onclick = () => {
-    files[currentEditFile] = editorTextarea.value;
-    alert(`Saved ${currentEditFile}`);
-  };
-  editorClearBtn.onclick = () => {
-    if(confirm('Clear all text?')) {
-      editorTextarea.value = '';
-    }
-  };
-
-  // -- TERMINAL COMMANDS --
-
-  function listFiles() {
-    const names = Object.keys(files);
-    print(names.length ? names.join('  ') : '(no files)');
-  }
-
-  function catFile(filename) {
-    print(filename in files ? files[filename] : `cat: no such file: ${filename}`);
-  }
-
-  function editFile(filename) {
-    if(!(filename in files)) {
-      files[filename] = '';
-    }
-    currentEditFile = filename;
-    loadEditorContent(filename);
-    setActiveTab('editor');
-  }
-
-  // Run file interpreter
-  function runFile(filename) {
-    if (!(filename in files)) {
-      print(`run: no such file: ${filename}`);
-      prompt();
-      return;
-    }
-    print(`Running ${filename}...`);
-    const interpreter = new Interpreter(files[filename], function(interpreter, globalObject) {
-      interpreter.setProperty(globalObject, 'print',
-        interpreter.createNativeFunction(function(text) {
-          print(String(text));
-        })
-      );
-      interpreter.setProperty(globalObject, 'scan',
-        interpreter.createNativeFunction(function() {
-          return servers.map(s=>s.name).join('\n');
-        })
-      );
-      interpreter.setProperty(globalObject, 'probe',
-        interpreter.createNativeFunction(function(server) {
-          server = String(server);
-          const srv = servers.find(s => s.name === server);
-          if(!srv) return 'UNKNOWN HOST';
-          return srv.vulnerable ? 'VULNERABLE' : 'SECURE';
-        })
-      );
-      interpreter.setProperty(globalObject, 'cameraStatus',
-        interpreter.createNativeFunction(function(server) {
-          server = String(server);
-          const srv = servers.find(s => s.name === server);
-          if(!srv) return 'UNKNOWN HOST';
-          return srv.cameraOn ? 'ONLINE' : 'OFFLINE';
-        })
-      );
-      interpreter.setProperty(globalObject, 'hack',
-        interpreter.createNativeFunction(function(server) {
-          server = String(server);
-          const srv = servers.find(s => s.name === server);
-          if(!srv) return 'FAIL: NO HOST';
-          if(srv.special) {
-            // Nyl's server hacked attempt triggers FBI and ratting
-            fbiSuspicion = 100;
-            suspiciousHackers.forEach(h => {
-              addMessage(h, 'them', "The dev's server was targeted! We're being watched!");
-            });
-            updateFooterSuspicion();
-            return 'ACCESS DENIED: DEV SERVER';
-          }
-          if(srv.vulnerable) {
-            srv.hacked = true;
-            return `SUCCESS: Hacked ${server}`;
-          } else {
-            return `FAIL: ${server} NOT VULNERABLE`;
-          }
-        })
-      );
-    });
-
-    try {
-      interpreter.run();
-    } catch(e) {
-      print(`Error: ${e.message}`);
-    }
-    prompt();
-  }
-
-  // Terminal print wrapper
-  function print(text) {
-    term.writeln(text);
-  }
-
-  // Terminal prompt
-  function prompt() {
-    term.write(PROMPT);
-  }
-
-  // Parse & execute terminal commands
-  function handleCommand(line) {
-    const args = line.trim().split(/\s+/);
-    if(!args.length) {
-      prompt();
-      return;
-    }
-    const cmd = args[0].toLowerCase();
-
-    switch(cmd) {
-      case 'help':
-        print(`Available commands: help, ls, cat, edit, run, clear, exit`);
-        prompt();
-        break;
-      case 'ls':
-        listFiles();
-        prompt();
-        break;
-      case 'cat':
-        if(args.length < 2) {
-          print('cat: filename required');
-          prompt();
-        } else {
-          catFile(args[1]);
-          prompt();
-        }
-        break;
-      case 'edit':
-        if(args.length < 2) {
-          print('edit: filename required');
-          prompt();
-        } else {
-          editFile(args[1]);
-        }
-        break;
-      case 'run':
-        if(args.length < 2) {
-          print('run: filename required');
-          prompt();
-        } else {
-          runFile(args[1]);
-        }
-        break;
-      case 'clear':
-        term.clear();
-        prompt();
-        break;
-      case 'exit':
-        print('Exiting Cyber Secrecy. Reload page to restart.');
-        term.write('');
-        break;
-      default:
-        print(`Unknown command: ${cmd}`);
-        prompt();
-        break;
-    }
-  }
-
-  // Terminal input handling with history and cursor support
-  term.promptBuffer = '';
-  term.cursorPos = 0;
-
-  term.onKey(e => {
-    const ev = e.domEvent;
-    const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
-
-    if (ev.key === 'Backspace') {
-      if (term.cursorPos > 0) {
-        term.promptBuffer = term.promptBuffer.slice(0, term.cursorPos - 1) + term.promptBuffer.slice(term.cursorPos);
-        term.cursorPos--;
-        refreshCommandLine();
-      }
-    } else if (ev.key === 'Delete') {
-      if (term.cursorPos < term.promptBuffer.length) {
-        term.promptBuffer = term.promptBuffer.slice(0, term.cursorPos) + term.promptBuffer.slice(term.cursorPos + 1);
-        refreshCommandLine();
-      }
-    } else if (ev.key === 'ArrowLeft') {
-      if (term.cursorPos > 0) {
-        term.cursorPos--;
-        term.write('\x1b[D');
-      }
-    } else if (ev.key === 'ArrowRight') {
-      if (term.cursorPos < term.promptBuffer.length) {
-        term.cursorPos++;
-        term.write('\x1b[C');
-      }
-    } else if (ev.key === 'ArrowUp') {
-      if (commandHistory.length === 0) return;
-      if (historyIndex < commandHistory.length - 1) historyIndex++;
-      term.promptBuffer = commandHistory[commandHistory.length - 1 - historyIndex];
-      term.cursorPos = term.promptBuffer.length;
-      refreshCommandLine();
-    } else if (ev.key === 'ArrowDown') {
-      if (historyIndex > 0) {
-        historyIndex--;
-        term.promptBuffer = commandHistory[commandHistory.length - 1 - historyIndex];
-      } else {
-        historyIndex = -1;
-        term.promptBuffer = '';
-      }
-      term.cursorPos = term.promptBuffer.length;
-      refreshCommandLine();
-    } else if (ev.key === 'Enter') {
-      term.writeln('');
-      if (term.promptBuffer.trim() !== '') {
-        commandHistory.push(term.promptBuffer);
-      }
-      historyIndex = -1;
-      handleCommand(term.promptBuffer);
-      term.promptBuffer = '';
-      term.cursorPos = 0;
-    } else if (printable) {
-      term.promptBuffer = term.promptBuffer.slice(0, term.cursorPos) + e.key + term.promptBuffer.slice(term.cursorPos);
-      term.cursorPos++;
-      refreshCommandLine();
+  document.getElementById('chat-send').addEventListener('click', () => {
+    const input = document.getElementById('chat-input');
+    if(input.value.trim() === '') return;
+    sendMessage(input.value.trim());
+    input.value = '';
+    input.focus();
+  });
+  document.getElementById('chat-input').addEventListener('keydown', e => {
+    if(e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('chat-send').click();
     }
   });
 
-  prompt();
+  renderContacts();
 
-  // -- UI helper for suspicion display in footer --
-  function updateFooterSuspicion() {
-    const footer = document.getElementById('footer');
-    if (fbiSuspicion > 75) {
-      footer.style.color = '#ff2200';
-      footer.textContent = `FBI Suspicion Level: ${fbiSuspicion} - HIGH! Lay low!`;
-    } else if (fbiSuspicion > 40) {
-      footer.style.color = '#ffff00';
-      footer.textContent = `FBI Suspicion Level: ${fbiSuspicion} - Moderate caution advised.`;
-    } else {
-      footer.style.color = '#00ff00';
-      footer.textContent = `FBI Suspicion Level: ${fbiSuspicion} - All clear.`;
+  // Editor: simple file system simulation
+  let files = {
+    "malware1.js": "// Malware script 1\nconsole.log('Executing malware1');",
+    "malware2.js": "// Malware script 2\nconsole.log('Executing malware2');",
+  };
+  let currentFile = "malware1.js";
+
+  function renderFileList() {
+    const select = document.getElementById('file-select');
+    select.innerHTML = '';
+    for(const fname in files) {
+      const opt = document.createElement('option');
+      opt.value = fname;
+      opt.textContent = fname;
+      if(fname === currentFile) opt.selected = true;
+      select.appendChild(opt);
     }
   }
+  function renderEditor() {
+    document.getElementById('editor-textarea').value = files[currentFile] || '';
+  }
 
-  updateFooterSuspicion();
+  document.getElementById('file-select').addEventListener('change', e => {
+    currentFile = e.target.value;
+    renderEditor();
+  });
 
-  // -- Initial selection --
-  selectContact(Object.keys(contacts)[0]);
+  document.getElementById('editor-save').addEventListener('click', () => {
+    files[currentFile] = document.getElementById('editor-textarea').value;
+    alert(`Saved ${currentFile}`);
+  });
+  document.getElementById('editor-clear').addEventListener('click', () => {
+    if(confirm('Clear all text in editor?')) {
+      document.getElementById('editor-textarea').value = '';
+      files[currentFile] = '';
+    }
+  });
+  document.getElementById('editor-run').addEventListener('click', () => {
+    alert(`Running script ${currentFile}:\n\n${files[currentFile]}`);
+    // Here you can plug in malware running logic
+  });
 
-})();
+  renderFileList();
+  renderEditor();
+
+  // Black Market listings simulation
+  let marketListings = [
+    {id: 1, description: 'Credentials for Gamma Cloud 514', price: 500},
+    {id: 2, description: 'Exploit script for Omega Hub 539', price: 1200},
+    {id: 3, description: 'Fmail inbox dump', price: 300},
+  ];
+
+  function renderMarketListings() {
+    const container = document.getElementById('market-listings');
+    container.innerHTML = '';
+    marketListings.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'marketplace-listing';
+      div.innerHTML = `
+        <strong>${item.description}</strong><br/>
+        Price: $${item.price.toLocaleString()}<br/>
+        <button data-id="${item.id}">Buy</button>
+      `;
+      div.querySelector('button').addEventListener('click', () => {
+        alert(`Bought "${item.description}" for $${item.price.toLocaleString()}`);
+        // Here handle buying logic, remove listing, etc
+      });
+      container.appendChild(div);
+    });
+  }
+
+  document.getElementById('market-sell').addEventListener('click', () => {
+    const val = document.getElementById('market-input').value.trim();
+    if(!val) return alert('Enter data to sell!');
+    // Fake pricing logic
+    const price = Math.floor(Math.random() * 1000) + 100;
+    marketListings.push({
+      id: marketListings.length + 1,
+      description: val,
+      price,
+    });
+    renderMarketListings();
+    document.getElementById('market-input').value = '';
+  });
+
+  renderMarketListings();
+
+  // Terminal placeholder logic
+  const terminalOutput = document.getElementById('terminal-output');
+  const terminalInput = document.getElementById('terminal-input');
+  const terminalSend = document.getElementById('terminal-send');
+  let terminalHistory = [];
+  let terminalHistoryIndex = -1;
+
+  function appendTerminalLine(line) {
+    terminalOutput.textContent += line + '\n';
+    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+  }
+  appendTerminalLine('Welcome to Cyber Secrecy Terminal');
+  appendTerminalLine('Type help for commands.');
+
+  terminalSend.addEventListener('click', () => {
+    processTerminalCommand(terminalInput.value.trim());
+    terminalInput.value = '';
+    terminalHistoryIndex = -1;
+  });
+  terminalInput.addEventListener('keydown', e => {
+    if(e.key === 'Enter') {
+      e.preventDefault();
+      terminalSend.click();
+    } else if(e.key === 'ArrowUp') {
+      if(terminalHistory.length === 0) return;
+      if(terminalHistoryIndex < 0) terminalHistoryIndex = terminalHistory.length - 1;
+      else terminalHistoryIndex = Math.max(0, terminalHistoryIndex - 1);
+      terminalInput.value = terminalHistory[terminalHistoryIndex];
+    } else if(e.key === 'ArrowDown') {
+      if(terminalHistory.length === 0) return;
+      if(terminalHistoryIndex === -1) return;
+      terminalHistoryIndex = Math.min(terminalHistory.length -1, terminalHistoryIndex +1);
+      terminalInput.value = terminalHistory[terminalHistoryIndex] || '';
+    }
+  });
+
+  function processTerminalCommand(cmd) {
+    if(!cmd) return;
+    appendTerminalLine(`> ${cmd}`);
+    terminalHistory.push(cmd);
+    // Simplified commands
+    switch(cmd.toLowerCase()) {
+      case 'help':
+        appendTerminalLine('Available commands: help, clear, servers, whoami');
+        break;
+      case 'clear':
+        terminalOutput.textContent = '';
+        break;
+      case 'servers':
+        appendTerminalLine('Use the Servers window to browse and hack servers.');
+        break;
+      case 'whoami':
+        appendTerminalLine('You are: Player');
+        break;
+      default:
+        appendTerminalLine(`Unknown command: ${cmd}`);
+    }
+  }
 </script>
 
 </body>
