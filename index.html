@@ -7,18 +7,15 @@
   <style>
     html, body {
       height: 100%;
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       background: linear-gradient(135deg, #001000, #003300);
       font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
       overflow: hidden;
       color: #00ff00;
+      user-select: none;
     }
-  
     #header {
-      position: fixed;
-      top: 0;
-      width: 100vw;
+      position: fixed; top: 0; width: 100vw;
       background-color: #001a00;
       border-bottom: 1px solid #00ff00;
       color: #00ff00;
@@ -29,12 +26,10 @@
       font-family: 'Courier New', monospace;
       text-shadow: 0 0 6px #00ff00;
       z-index: 10;
+      user-select: text;
     }
-  
     #footer {
-      position: fixed;
-      bottom: 0;
-      width: 100vw;
+      position: fixed; bottom: 0; width: 100vw;
       background-color: #001a00;
       border-top: 1px solid #00ff00;
       color: #00ff00;
@@ -44,42 +39,125 @@
       font-family: 'Courier New', monospace;
       text-shadow: 0 0 4px #00ff00;
       z-index: 10;
+      user-select: text;
     }
-  
-    #terminal-container {
-      position: absolute;
-      top: 40px;    /* space for header */
-      bottom: 30px; /* space for footer */
+    #tabs {
+      position: fixed;
+      top: 40px;
+      width: 100vw;
+      background: #001a00;
+      display: flex;
+      border-bottom: 1px solid #00ff00;
+      user-select: none;
+      z-index: 10;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px 0;
+      color: #00ff00aa;
+      text-align: center;
+      cursor: pointer;
+      font-weight: bold;
+      font-family: 'Courier New', monospace;
+      border-right: 1px solid #004400;
+      user-select: none;
+      transition: color 0.3s;
+    }
+    .tab:last-child { border-right: none; }
+    .tab.active {
+      color: #00ff00;
+      background: #003300;
+      box-shadow: inset 0 -3px 0 #00ff00;
+    }
+    #terminal-container, #camera-container {
+      position: fixed;
+      top: 80px;  /* header + tabs */
+      bottom: 30px;
       width: 100vw;
       background: #050505;
       box-shadow: 0 0 20px #00ff00aa;
+      overflow: hidden;
+      display: none;
     }
-  
+    #terminal-container.active, #camera-container.active {
+      display: block;
+    }
     .xterm {
       padding: 12px;
       font-size: 16px;
       line-height: 1.4;
     }
-  
-    ::selection {
-      background: rgba(0, 255, 0, 0.4);
+    #camera-feed {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      color: #0f0;
+      font-family: monospace;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow-y: auto;
+      white-space: pre-wrap;
     }
-  
-    ::-webkit-scrollbar {
-      width: 0px;
-      height: 0px;
+    #ai-chat {
+      position: fixed;
+      bottom: 40px;
+      left: 10px;
+      max-width: 300px;
+      background: rgba(0, 255, 0, 0.15);
+      color: #00ff00;
+      font-family: monospace;
+      padding: 10px;
+      border: 1px solid #00ff00;
+      border-radius: 5px;
+      user-select: text;
+      font-size: 0.9rem;
+      max-height: 150px;
+      overflow-y: auto;
+      display: none;
+      z-index: 20;
     }
   </style>
 </head>
 <body>
   <div id="header">Cyber Secrecy</div>
-  <div id="terminal-container"></div>
+  <div id="tabs">
+    <div class="tab active" data-tab="terminal">Terminal</div>
+    <div class="tab" data-tab="camera">Cameras</div>
+  </div>
+  <div id="terminal-container" class="active"></div>
+  <div id="camera-container">
+    <div id="camera-feed">Select a server to view its live camera feed.</div>
+  </div>
   <div id="footer">Type "help" for commands or "edit readme.txt" to get started</div>
+  <div id="ai-chat"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/js-interpreter@latest/interpreter.js"></script>
 
   <script>
+    // === Tabs system ===
+    const tabs = document.querySelectorAll('.tab');
+    const terminalContainer = document.getElementById('terminal-container');
+    const cameraContainer = document.getElementById('camera-container');
+    const aiChat = document.getElementById('ai-chat');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        if (tab.dataset.tab === 'terminal') {
+          terminalContainer.classList.add('active');
+          cameraContainer.classList.remove('active');
+          aiChat.style.display = 'none';
+        } else if (tab.dataset.tab === 'camera') {
+          terminalContainer.classList.remove('active');
+          cameraContainer.classList.add('active');
+          aiChat.style.display = 'block';
+        }
+      });
+    });
+
+    // === Terminal setup ===
     const { Terminal } = window;
     const term = new Terminal({
       cursorBlink: true,
@@ -94,48 +172,57 @@
         selectionBackground: 'rgba(0, 255, 0, 0.3)'
       }
     });
-
-    term.open(document.getElementById('terminal-container'));
+    term.open(terminalContainer);
 
     const PROMPT = '>| ';
     let commandBuffer = '';
-    let mode = "command"; // "command" or "edit"
+    let mode = "command";
     let currentEditLines = [];
     let currentEditFile = "";
 
+    // Files and servers
     const files = {
       'readme.txt': 'Welcome to Cyber Secrecy.\nCommands: ls, cat, edit, run.\nIn scripts, try: print(), scan(), probe(), cameraStatus(), hack()'
     };
 
-    const fakeServers = {
-      'alpha.net': { vulnerable: true, cameraOn: true, hacked: false },
-      'beta.sys': { vulnerable: false, cameraOn: false, hacked: false },
-      'gamma.io': { vulnerable: true, cameraOn: false, hacked: false }
-    };
+    // Generate random server names
+    function randomServerName() {
+      const prefixes = ['alpha', 'beta', 'gamma', 'delta', 'omega', 'zeta', 'theta', 'sigma', 'kappa', 'lambda'];
+      const domains = ['.net', '.sys', '.io', '.com', '.org'];
+      return prefixes[Math.floor(Math.random()*prefixes.length)] + domains[Math.floor(Math.random()*domains.length)];
+    }
 
+    // AI server states - randomized on page load
+    const fakeServers = {};
+    const serverCount = 5;
+    for(let i=0; i < serverCount; i++) {
+      fakeServers[randomServerName()] = {
+        vulnerable: Math.random() < 0.5,
+        cameraOn: Math.random() < 0.7,
+        hacked: false,
+        suspiciousLevel: 0
+      };
+    }
+
+    // === Terminal functions ===
     function scrollBottom() {
       setTimeout(() => term.scrollToBottom(), 0);
     }
-
     function prompt() {
       term.write('\r\n' + PROMPT);
       scrollBottom();
     }
-
     function print(text = '') {
       term.writeln(text);
       scrollBottom();
     }
-
     function listFiles() {
       const names = Object.keys(files);
       print(names.length ? names.join('  ') : '(no files)');
     }
-
     function catFile(filename) {
       print(filename in files ? files[filename] : `cat: no such file: ${filename}`);
     }
-
     function editFile(filename) {
       print(`Editing ${filename}. End with '.' on a line.`);
       mode = "edit";
@@ -143,14 +230,12 @@
       currentEditFile = filename;
       term.write('\r\n> ');
     }
-
     function runFile(filename) {
       if (!(filename in files)) {
         print(`run: no such file: ${filename}`);
         prompt();
         return;
       }
-
       print(`Running ${filename}...`);
 
       const interpreter = new Interpreter(files[filename], function(interpreter, globalObject) {
@@ -159,13 +244,11 @@
             print(String(text));
           })
         );
-
         interpreter.setProperty(globalObject, 'scan',
           interpreter.createNativeFunction(function() {
             return Object.keys(fakeServers).join('\n');
           })
         );
-
         interpreter.setProperty(globalObject, 'probe',
           interpreter.createNativeFunction(function(server) {
             server = String(server);
@@ -173,7 +256,6 @@
             return fakeServers[server].vulnerable ? 'VULNERABLE' : 'SECURE';
           })
         );
-
         interpreter.setProperty(globalObject, 'cameraStatus',
           interpreter.createNativeFunction(function(server) {
             server = String(server);
@@ -181,7 +263,6 @@
             return fakeServers[server].cameraOn ? 'ONLINE' : 'OFFLINE';
           })
         );
-
         interpreter.setProperty(globalObject, 'hack',
           interpreter.createNativeFunction(function(server) {
             server = String(server);
@@ -209,26 +290,38 @@
           prompt();
         }
       }
-
       runStep();
     }
 
+    // Handle commands
     function handleCommand(line) {
       const parts = line.trim().split(' ');
       const cmd = parts[0];
       const arg = parts.slice(1).join(' ');
 
-      switch (cmd) {
+      switch(cmd) {
         case 'ls': listFiles(); prompt(); break;
         case 'cat': catFile(arg); prompt(); break;
         case 'edit': if (!arg) print('Usage: edit <filename>'); else editFile(arg); break;
         case 'run': if (!arg) print('Usage: run <filename>'); else runFile(arg); break;
-        case '': prompt(); break;
         case 'help':
-          print('Available commands: ls, cat, edit, run, help');
+          print('Commands: ls, cat, edit, run, cams, status');
           prompt();
           break;
-        default: print(`Unknown command: ${cmd}`); prompt();
+        case 'cams':
+          switchToTab('camera');
+          prompt();
+          break;
+        case 'status':
+          printServerStatus();
+          prompt();
+          break;
+        case '':
+          prompt();
+          break;
+        default:
+          print(`Unknown command: ${cmd}`);
+          prompt();
       }
     }
 
@@ -236,15 +329,15 @@
       const ev = e.domEvent;
       const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
 
-      if (ev.key === 'Enter') {
+      if(ev.key === 'Enter') {
         term.write('\r\n');
-        if (mode === "command") {
+        if(mode === "command") {
           handleCommand(commandBuffer.trim());
           commandBuffer = '';
-        } else if (mode === "edit") {
+        } else if(mode === "edit") {
           const line = commandBuffer.trimEnd();
           commandBuffer = '';
-          if (line === '.') {
+          if(line === '.') {
             files[currentEditFile] = currentEditLines.join('\n');
             print(`Saved ${currentEditFile}`);
             mode = "command";
@@ -256,20 +349,167 @@
             term.write('> ');
           }
         }
-      } else if (ev.key === 'Backspace') {
-        if (commandBuffer.length > 0) {
+      } else if(ev.key === 'Backspace') {
+        if(commandBuffer.length > 0) {
           commandBuffer = commandBuffer.slice(0, -1);
           term.write('\b \b');
         }
-      } else if (printable) {
+      } else if(printable) {
         commandBuffer += ev.key;
         term.write(ev.key);
       }
-
       scrollBottom();
     });
 
-    // Show just the welcome readme text on load
+    // === Camera Feed ===
+    const cameraFeed = document.getElementById('camera-feed');
+    let selectedServer = null;
+
+    function renderCameraFeed() {
+      if(!selectedServer) {
+        cameraFeed.textContent = 'Select a server to view its live camera feed.';
+        return;
+      }
+      const server = fakeServers[selectedServer];
+      let camStatus = server.cameraOn ? 'ONLINE' : 'OFFLINE';
+      let hackedStatus = server.hacked ? 'HACKED' : 'SECURE';
+      let suspicious = server.suspiciousLevel;
+
+      let feed = `Live feed from ${selectedServer}:\n\n`;
+
+      if (!server.cameraOn) {
+        feed += '[NO SIGNAL]\n';
+      } else {
+        // Fake feed, e.g. flickering, random alerts if suspicious
+        feed += '[CAMERA VIEW]\n';
+        feed += '-------\n';
+
+        // Visual flicker or pixel noise simulation
+        let noise = '';
+        for(let i=0; i<20; i++) {
+          noise += Math.random() > 0.5 ? '.' : ',';
+          if(i % 10 === 0) noise += '\n';
+        }
+        feed += noise + '\n';
+
+        if(suspicious > 5) {
+          feed += '\n[ALERT] Suspicious activity detected!\n';
+        }
+      }
+
+      feed += `\nStatus: ${hackedStatus}\nCamera: ${camStatus}\nSuspiciousness Level: ${suspicious}`;
+
+      cameraFeed.textContent = feed;
+    }
+
+    // List servers and allow click to select camera feed
+    function updateCameraList() {
+      // We'll add clickable text at top of feed to switch
+      let listText = 'Available Cameras:\n';
+      Object.keys(fakeServers).forEach(server => {
+        listText += (server === selectedServer ? '▶ ' : '   ') + server + '\n';
+      });
+      cameraFeed.textContent = listText + '\n\nClick a server name to view its feed.';
+    }
+
+    // Handle clicks in camera feed for selecting servers
+    cameraFeed.addEventListener('click', e => {
+      if(e.target.nodeType === 3) { // text node
+        let clickedText = e.target.textContent.trim();
+        if(fakeServers[clickedText]) {
+          selectedServer = clickedText;
+          renderCameraFeed();
+        }
+      } else if(e.target.nodeType === 1) {
+        let text = e.target.innerText.trim();
+        if(fakeServers[text]) {
+          selectedServer = text;
+          renderCameraFeed();
+        }
+      }
+    });
+
+    // Render camera list or feed depending on selectedServer
+    function cameraTick() {
+      if(!selectedServer) {
+        updateCameraList();
+      } else {
+        // Simulate suspicious behavior increasing over time
+        const server = fakeServers[selectedServer];
+        if (!server.hacked) {
+          server.suspiciousLevel = Math.min(10, server.suspiciousLevel + (Math.random() * 0.3));
+          if(server.suspiciousLevel > 7 && Math.random() < 0.02) {
+            aiSendMessage();
+          }
+        }
+        renderCameraFeed();
+      }
+    }
+
+    // === AI Chat system ===
+    const hackerChatMessages = [
+      "Stop watching me.",
+      "You won’t get away with this.",
+      "Try harder.",
+      "Back off or face consequences.",
+      "I’m watching you too.",
+      "Keep looking, see what happens.",
+      "You don’t understand the game.",
+      "You’re in over your head.",
+      "This isn’t just a game.",
+      "Systems locked down."
+    ];
+
+    function aiSendMessage() {
+      if(aiChat.style.display === 'none') return; // Only send when visible
+
+      const message = hackerChatMessages[Math.floor(Math.random()*hackerChatMessages.length)];
+      const p = document.createElement('div');
+      p.textContent = message;
+      aiChat.appendChild(p);
+      aiChat.scrollTop = aiChat.scrollHeight;
+
+      // Fade out after 8 seconds
+      setTimeout(() => {
+        p.style.transition = 'opacity 2s';
+        p.style.opacity = '0';
+        setTimeout(() => p.remove(), 2000);
+      }, 8000);
+    }
+
+    // Allow switching tabs programmatically (e.g. from terminal command)
+    function switchToTab(name) {
+      tabs.forEach(t => {
+        if(t.dataset.tab === name) t.classList.add('active');
+        else t.classList.remove('active');
+      });
+      if(name === 'terminal') {
+        terminalContainer.classList.add('active');
+        cameraContainer.classList.remove('active');
+        aiChat.style.display = 'none';
+      } else if(name === 'camera') {
+        terminalContainer.classList.remove('active');
+        cameraContainer.classList.add('active');
+        aiChat.style.display = 'block';
+      }
+    }
+
+    // Extra command: print status of all servers
+    function printServerStatus() {
+      for(const server in fakeServers) {
+        const s = fakeServers[server];
+        print(`${server} | Vulnerable: ${s.vulnerable ? 'YES' : 'NO'} | Camera: ${s.cameraOn ? 'ON' : 'OFF'} | Hacked: ${s.hacked ? 'YES' : 'NO'} | Suspicious: ${s.suspiciousLevel.toFixed(1)}`);
+      }
+    }
+
+    // Update loop for cameras & AI chat
+    setInterval(() => {
+      if(cameraContainer.classList.contains('active')) {
+        cameraTick();
+      }
+    }, 1500);
+
+    // Show welcome text at start
     print(files['readme.txt']);
     prompt();
 
