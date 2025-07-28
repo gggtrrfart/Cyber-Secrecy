@@ -1,33 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Cyber Secrecy - Sandbox Terminal</title>
-<!-- xterm.js CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
-<style>
-  html, body {
-    height: 100%;
-    margin: 0;
-    background-color: #0a0a0a;
-    color: #00ff00;
-    font-family: monospace;
-  }
-  #terminal-container {
-    height: 100vh;
-    width: 100vw;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <title>Cyber Secrecy</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background-color: #0a0a0a;
+      color: #00ff00;
+      font-family: monospace;
+    }
+    #terminal-container {
+      height: 100vh;
+      width: 100vw;
+    }
+  </style>
 </head>
 <body>
 <div id="terminal-container"></div>
 
-<!-- Load JS libraries -->
 <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/js-interpreter@latest/interpreter.js"></script>
 
 <script>
-  // Setup terminal
   const { Terminal } = window;
   const term = new Terminal({
     cursorBlink: true,
@@ -41,18 +38,22 @@
       selectionBackground: 'rgba(0, 255, 0, 0.3)'
     }
   });
+
   term.open(document.getElementById('terminal-container'));
 
-  // Variables
   const PROMPT = '$ ';
   let commandBuffer = '';
 
-  // Virtual file system
   const files = {
-    'readme.txt': 'Welcome to Cyber Secrecy.\nType ls, cat, edit, run commands.\n',
+    'readme.txt': 'Welcome to Cyber Secrecy.\nCommands: ls, cat, edit, run.\nIn your scripts, use:\nprint(), scan(), probe(server), cameraStatus(server), hack(server)'
   };
 
-  // Helpers
+  const fakeServers = {
+    'alpha.net': { vulnerable: true, cameraOn: true, hacked: false },
+    'beta.sys': { vulnerable: false, cameraOn: false, hacked: false },
+    'gamma.io': { vulnerable: true, cameraOn: false, hacked: false }
+  };
+
   function scrollBottom() {
     setTimeout(() => term.scrollToBottom(), 0);
   }
@@ -69,40 +70,28 @@
 
   function listFiles() {
     const names = Object.keys(files);
-    if (names.length === 0) {
-      print('(no files)');
-    } else {
-      print(names.join('  '));
-    }
+    print(names.length ? names.join('  ') : '(no files)');
   }
 
   function catFile(filename) {
-    if (filename in files) {
-      print(files[filename]);
-    } else {
-      print(`cat: no such file: ${filename}`);
-    }
+    print(filename in files ? files[filename] : `cat: no such file: ${filename}`);
   }
 
-  // Edit file (multi-line input ending with a single dot '.')
   async function editFile(filename) {
-    print(`Editing ${filename}. Type your content. End with single '.' on a line.`);
+    print(`Editing ${filename}. End with '.' on a line.`);
     files[filename] = '';
-
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       let lines = [];
       term.write('\r\n> ');
-
       function onKey(e) {
         const ev = e.domEvent;
         if (ev.key === 'Enter') {
           const line = commandBuffer.trimEnd();
           commandBuffer = '';
           term.write('\r\n');
-
           if (line === '.') {
             files[filename] = lines.join('\n');
-            print(`Saved ${filename} (${lines.length} lines)`);
+            print(`Saved ${filename}`);
             term.offKey(onKey);
             prompt();
             resolve();
@@ -121,82 +110,102 @@
         }
         scrollBottom();
       }
-
       term.onKey(onKey);
     });
   }
 
-  // Sandbox run using JS-Interpreter
   function runFile(filename) {
     if (!(filename in files)) {
       print(`run: no such file: ${filename}`);
       prompt();
       return;
     }
+
     print(`Running ${filename}...`);
 
-    try {
-      const interpreter = new Interpreter(files[filename], function(interpreter, globalObject) {
-        // No APIs exposed here = fully sandboxed
-      });
+    const interpreter = new Interpreter(files[filename], function(interpreter, globalObject) {
+      // print(text)
+      interpreter.setProperty(globalObject, 'print',
+        interpreter.createNativeFunction(function(text) {
+          print(String(text));
+        })
+      );
 
-      function runStep() {
+      // scan()
+      interpreter.setProperty(globalObject, 'scan',
+        interpreter.createNativeFunction(function() {
+          return Object.keys(fakeServers).join('\n');
+        })
+      );
+
+      // probe(server)
+      interpreter.setProperty(globalObject, 'probe',
+        interpreter.createNativeFunction(function(server) {
+          server = String(server);
+          if (!fakeServers[server]) return 'UNKNOWN HOST';
+          return fakeServers[server].vulnerable ? 'VULNERABLE' : 'SECURE';
+        })
+      );
+
+      // cameraStatus(server)
+      interpreter.setProperty(globalObject, 'cameraStatus',
+        interpreter.createNativeFunction(function(server) {
+          server = String(server);
+          if (!fakeServers[server]) return 'UNKNOWN HOST';
+          return fakeServers[server].cameraOn ? 'ONLINE' : 'OFFLINE';
+        })
+      );
+
+      // hack(server)
+      interpreter.setProperty(globalObject, 'hack',
+        interpreter.createNativeFunction(function(server) {
+          server = String(server);
+          if (!fakeServers[server]) return 'FAIL: NO HOST';
+          const s = fakeServers[server];
+          if (s.hacked) return 'ALREADY HACKED';
+          if (!s.vulnerable) return 'FAIL: SECURE';
+          if (s.cameraOn) return 'FAIL: CAMERAS ONLINE';
+          s.hacked = true;
+          return 'SUCCESS: ' + server + ' BREACHED';
+        })
+      );
+    });
+
+    function runStep() {
+      try {
         if (interpreter.step()) {
           setTimeout(runStep, 0);
         } else {
           print('Script finished.');
           prompt();
         }
+      } catch (err) {
+        print('Script Error: ' + err.message);
+        prompt();
       }
-      runStep();
-    } catch (e) {
-      print('Error: ' + e.message);
-      prompt();
     }
+
+    runStep();
   }
 
-  // Handle input commands
   function handleCommand(line) {
     const parts = line.trim().split(' ');
     const cmd = parts[0];
     const arg = parts.slice(1).join(' ');
 
     switch (cmd) {
-      case 'ls':
-        listFiles();
-        prompt();
-        break;
-      case 'cat':
-        if (!arg) print('Usage: cat <filename>');
-        else catFile(arg);
-        prompt();
-        break;
-      case 'edit':
-        if (!arg) {
-          print('Usage: edit <filename>');
-          prompt();
-          break;
-        }
-        editFile(arg);
-        break;
-      case 'run':
-        if (!arg) print('Usage: run <filename>');
-        else runFile(arg);
-        break;
-      case '':
-        prompt();
-        break;
-      default:
-        print(`Unknown command: ${cmd}`);
-        prompt();
+      case 'ls': listFiles(); prompt(); break;
+      case 'cat': catFile(arg); prompt(); break;
+      case 'edit': if (!arg) print('Usage: edit <filename>'); else editFile(arg); break;
+      case 'run': if (!arg) print('Usage: run <filename>'); else runFile(arg); break;
+      case '': prompt(); break;
+      default: print(`Unknown command: ${cmd}`); prompt();
     }
   }
 
-  // Initialize prompt
   term.write(PROMPT);
   scrollBottom();
 
-  // Terminal input handling
   term.onKey(e => {
     const ev = e.domEvent;
     const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
