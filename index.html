@@ -1,588 +1,864 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Cyber Secrecy Expanded</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
-<style>
-  /* Reset & base */
-  html, body {
-    height: 100%;
-    margin: 0; padding: 0;
-    background: linear-gradient(135deg, #001000, #003300);
-    font-family: 'JetBrains Mono', monospace;
-    color: #00ff00;
-    overflow: hidden;
-  }
+  <meta charset="UTF-8" />
+  <title>Cyber Secrecy</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #001000, #003300);
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      overflow: hidden;
+      color: #00ff00;
+    }
 
-  /* Tabs bar */
-  #tabs {
-    display: flex;
-    background: #002200cc;
-    border-bottom: 1px solid #00ff00;
-    user-select: none;
-  }
-  #tabs button {
-    flex: 1;
-    padding: 12px 0;
-    background: transparent;
-    border: none;
-    color: #00ff00;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 1.1rem;
-    text-shadow: 0 0 4px #00ff00;
-    transition: background 0.3s;
-  }
-  #tabs button.active, #tabs button:hover {
-    background: #004400dd;
-  }
+    #header {
+      position: fixed;
+      top: 0;
+      width: 100vw;
+      background-color: #001a00;
+      border-bottom: 1px solid #00ff00;
+      color: #00ff00;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.4rem;
+      padding: 8px 0;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 6px #00ff00;
+      z-index: 20;
+      user-select: none;
+    }
 
-  /* Content panes */
-  .tab-content {
-    position: absolute;
-    top: 44px; /* tabs height + border */
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: #050505;
-    box-shadow: 0 0 20px #00ff00aa;
-    display: none;
-  }
-  .tab-content.active {
-    display: block;
-  }
+    #footer {
+      position: fixed;
+      bottom: 0;
+      width: 100vw;
+      background-color: #001a00;
+      border-top: 1px solid #00ff00;
+      color: #00ff00;
+      text-align: center;
+      font-size: 0.9rem;
+      padding: 6px 0;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 4px #00ff00;
+      z-index: 20;
+      user-select: none;
+    }
 
-  /* Terminal container */
-  #terminal-container .xterm {
-    font-size: 14px;
-  }
+    #tab-buttons {
+      position: fixed;
+      top: 38px;
+      width: 100vw;
+      background: #002200cc;
+      border-bottom: 1px solid #00ff00;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      padding: 4px 0;
+      z-index: 15;
+      user-select: none;
+    }
 
-  /* Server list styling */
-  #servers-list {
-    padding: 12px;
-    overflow-y: auto;
-    height: 100%;
-    font-family: monospace;
-    white-space: pre-wrap;
-  }
+    #tab-buttons button {
+      background: transparent;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      font-family: monospace;
+      font-weight: bold;
+      padding: 6px 14px;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: background-color 0.3s ease;
+    }
 
-  /* Cameras */
-  #cams-feed {
-    padding: 12px;
-    color: #00ff00;
-    font-family: monospace;
-    overflow-y: auto;
-    height: 100%;
-  }
+    #tab-buttons button.active,
+    #tab-buttons button:hover {
+      background-color: #004400;
+    }
 
-  /* Phone */
-  #phone-messages {
-    padding: 12px;
-    height: calc(100% - 50px);
-    overflow-y: auto;
-    font-family: monospace;
-  }
-  #phone-input {
-    width: 100%;
-    box-sizing: border-box;
-    background: #001a00;
-    border: 1px solid #00ff00;
-    color: #00ff00;
-    font-family: monospace;
-    padding: 8px;
-  }
+    .tab {
+      position: absolute;
+      top: 70px;
+      bottom: 40px;
+      width: 100vw;
+      background: #050505;
+      box-shadow: 0 0 20px #00ff00aa;
+      overflow-y: auto;
+      padding: 12px;
+      display: none;
+      font-family: monospace;
+      color: #00ff00;
+      white-space: pre-wrap;
+    }
 
-  /* Malware editor */
-  #malware-editor {
-    height: 100%;
-  }
-  #malware-textarea {
-    width: 100%;
-    height: 100%;
-    background: #001a00;
-    color: #00ff00;
-    font-family: monospace;
-    font-size: 14px;
-    border: none;
-    padding: 12px;
-    box-sizing: border-box;
-    resize: none;
-  }
-  #run-malware-btn {
-    position: absolute;
-    bottom: 12px;
-    right: 12px;
-    background: #004400cc;
-    border: 1px solid #00ff00;
-    color: #00ff00;
-    padding: 8px 16px;
-    font-family: monospace;
-    cursor: pointer;
-  }
+    #terminal-tab {
+      padding-bottom: 50px;
+    }
 
-</style>
+    /* Terminal container tweaks */
+    .xterm {
+      padding: 12px !important;
+      font-size: 16px !important;
+      line-height: 1.4 !important;
+    }
+
+    ::selection {
+      background: rgba(0, 255, 0, 0.4);
+    }
+
+    ::-webkit-scrollbar {
+      width: 0px;
+      height: 0px;
+    }
+
+    /* Phone tab chat log */
+    #chat-log {
+      height: calc(100% - 60px);
+      overflow-y: auto;
+      border: 1px solid #00ff00;
+      padding: 8px;
+      background: #001a00;
+      margin-bottom: 8px;
+    }
+    #chat-log div {
+      margin-bottom: 6px;
+    }
+    #chat-input {
+      width: 100%;
+      box-sizing: border-box;
+      background: #001a00;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      font-family: monospace;
+      font-size: 1rem;
+      padding: 6px 8px;
+      outline: none;
+    }
+
+    /* Gangs list */
+    #gangs-list {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    #gangs-list li {
+      margin: 4px 0;
+    }
+    #gang-controls {
+      margin-top: 12px;
+    }
+    #gang-controls input {
+      padding: 6px 8px;
+      font-family: monospace;
+      font-size: 1rem;
+      margin-right: 8px;
+      width: 200px;
+    }
+    #gang-controls button {
+      padding: 6px 12px;
+      background: #002200;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      font-family: monospace;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: background-color 0.3s ease;
+    }
+    #gang-controls button:hover:not(:disabled) {
+      background-color: #004400;
+    }
+    #gang-controls button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    /* Servers list styling */
+    #servers-list {
+      font-family: monospace;
+      white-space: pre;
+      line-height: 1.3;
+    }
+
+    /* FBI suspicion */
+    #fbi-status {
+      position: fixed;
+      top: 5px;
+      right: 10px;
+      background: #001a00cc;
+      border: 1px solid #ff0000;
+      padding: 6px 10px;
+      color: #ff3333;
+      font-family: monospace;
+      font-weight: bold;
+      border-radius: 4px;
+      user-select: none;
+      z-index: 25;
+      max-width: 160px;
+      text-align: center;
+      box-shadow: 0 0 8px #ff3333aa;
+    }
+
+    /* Achievements popup */
+    #achievements {
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #002200cc;
+      border: 1px solid #00ff00;
+      padding: 8px 16px;
+      font-family: monospace;
+      color: #00ff00;
+      font-weight: bold;
+      border-radius: 5px;
+      display: none;
+      z-index: 30;
+      user-select: none;
+      box-shadow: 0 0 10px #00ff00aa;
+    }
+
+    /* Black Market styling */
+    #blackmarket-list {
+      max-height: calc(100% - 120px);
+      overflow-y: auto;
+      margin-bottom: 12px;
+      border: 1px solid #00ff00;
+      background: #001a00;
+      padding: 8px;
+      white-space: pre-wrap;
+      font-family: monospace;
+    }
+    #blackmarket-controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    #blackmarket-controls button {
+      background: #002200;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      font-family: monospace;
+      font-weight: bold;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    #blackmarket-controls button:hover:not(:disabled) {
+      background-color: #004400;
+    }
+    #blackmarket-status {
+      font-family: monospace;
+      font-size: 1rem;
+      min-height: 24px;
+    }
+
+    /* Larger input bar */
+    #terminal-input-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100vw;
+      background: #001a00;
+      border-top: 1px solid #00ff00;
+      padding: 8px 12px;
+      box-sizing: border-box;
+      z-index: 20;
+      font-family: monospace;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    #terminal-input-bar input {
+      flex-grow: 1;
+      background: #000900;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      font-size: 1.1rem;
+      padding: 6px 8px;
+      outline: none;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    #terminal-input-bar button {
+      background: #002200;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      font-weight: bold;
+      padding: 6px 14px;
+      font-family: monospace;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    #terminal-input-bar button:hover {
+      background-color: #004400;
+    }
+  </style>
 </head>
 <body>
+  <div id="header">Cyber Secrecy</div>
+  <div id="tab-buttons">
+    <button id="terminal-tab-btn" class="active">Terminal</button>
+    <button id="cams-tab-btn">Servers</button>
+    <button id="phone-tab-btn">Phone</button>
+    <button id="gangs-tab-btn">Gangs</button>
+    <button id="blackmarket-tab-btn">Black Market</button>
+  </div>
 
-<!-- Tabs -->
-<div id="tabs">
-  <button data-tab="terminal" class="active">Terminal</button>
-  <button data-tab="servers">Servers</button>
-  <button data-tab="cams">Cameras</button>
-  <button data-tab="phone">Phone</button>
-  <button data-tab="malware">Malware Editor</button>
-</div>
+  <div id="fbi-status">FBI Suspicion: 0</div>
+  <div id="achievements"></div>
 
-<!-- Terminal Tab -->
-<div id="terminal-container" class="tab-content active"></div>
+  <div id="terminal-tab" class="tab" style="display:block;"></div>
+  <div id="cams-tab" class="tab">
+    <pre id="servers-list"></pre>
+  </div>
+  <div id="phone-tab" class="tab">
+    <div id="chat-log"></div>
+    <input id="chat-input" type="text" placeholder="Type your message here..." autocomplete="off" />
+  </div>
+  <div id="gangs-tab" class="tab">
+    <ul id="gangs-list"></ul>
+    <div id="gang-controls">
+      <input type="text" id="new-gang-name" placeholder="Gang name" autocomplete="off" />
+      <button id="join-gang-btn">Join / Create Gang</button>
+      <button id="leave-gang-btn" disabled>Leave Gang</button>
+    </div>
+  </div>
+  <div id="blackmarket-tab" class="tab">
+    <div id="blackmarket-list">No hacked data to sell.</div>
+    <div id="blackmarket-controls">
+      <button id="sell-all-btn" disabled>Sell All Data</button>
+      <button id="sell-some-btn" disabled>Sell Selected Data</button>
+      <select id="blackmarket-select" multiple size="6" style="flex-grow:1; background:#001a00; border:1px solid #00ff00; color:#00ff00; font-family: monospace;"></select>
+    </div>
+    <div id="blackmarket-status"></div>
+    <div style="margin-top:10px; font-style: italic; color: #007700;">
+      Info you sell reduces FBI suspicion but costs some money to buy.
+    </div>
+    <div style="margin-top:8px; font-weight: bold;">Your Wallet: $<span id="wallet-amount">0</span></div>
+  </div>
 
-<!-- Servers Tab -->
-<div id="servers-list" class="tab-content"></div>
+  <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-interpreter@latest/interpreter.js"></script>
 
-<!-- Cameras Tab -->
-<div id="cams-feed" class="tab-content"></div>
+  <script>
+    // Terminal setup
+    const { Terminal } = window;
+    const termContainer = document.getElementById('terminal-tab');
+    const term = new Terminal({
+      cursorBlink: true,
+      disableStdin: false,
+      scrollback: 5000,
+      fontSize: 14,
+      fontFamily: '"Consolas", "Courier New", monospace',
+      theme: {
+        background: '#0a0a0a',
+        foreground: '#00ff00',
+        cursor: '#00ff00',
+        selectionBackground: 'rgba(0, 255, 0, 0.3)'
+      }
+    });
+    term.open(termContainer);
 
-<!-- Phone Tab -->
-<div class="tab-content" id="phone-tab" style="display:flex; flex-direction: column;">
-  <div id="phone-messages"></div>
-  <input id="phone-input" placeholder="Type message and press Enter" />
-</div>
+    // Globals
+    const PROMPT = '>| ';
+    let commandBuffer = '';
+    let mode = "command"; // or "edit"
+    let currentEditLines = [];
+    let currentEditFile = "";
 
-<!-- Malware Editor Tab -->
-<div id="malware-editor" class="tab-content" style="position: relative;">
-  <textarea id="malware-textarea" spellcheck="false">// Write malware script here
-print("Hello, Malware World!");
-scan();
-</textarea>
-  <button id="run-malware-btn">Run Malware</button>
-</div>
+    let fbiSuspicion = 0;
+    const suspicionMax = 100;
+    let wallet = 0;
 
-<script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/js-interpreter@latest/interpreter.js"></script>
-
-<script>
-  // === Globals ===
-  const { Terminal } = window;
-  const term = new Terminal({
-    cursorBlink: true,
-    scrollback: 5000,
-    fontSize: 14,
-    fontFamily: '"JetBrains Mono", monospace',
-    theme: {
-      background: '#0a0a0a',
-      foreground: '#00ff00',
-      cursor: '#00ff00',
-      selectionBackground: 'rgba(0,255,0,0.3)'
+    // Achievements
+    const achievements = new Set();
+    const achievementsDiv = document.getElementById('achievements');
+    function showAchievement(text) {
+      if (achievements.has(text)) return;
+      achievements.add(text);
+      achievementsDiv.textContent = `Achievement unlocked: ${text}`;
+      achievementsDiv.style.display = 'block';
+      setTimeout(() => achievementsDiv.style.display = 'none', 4000);
     }
-  });
-  term.open(document.getElementById('terminal-container'));
 
-  const PROMPT = '>| ';
-  let commandBuffer = '';
-  let mode = "command"; // or "edit"
-  let currentEditLines = [];
-  let currentEditFile = "";
-
-  // Files system (in memory)
-  const files = {
-    'readme.txt': 'Welcome.\nUse ls, cat, edit, run commands.\nTry hacking AI servers!',
-  };
-
-  // Hacker Ranks & Trust system (simplified)
-  const hackerRanks = {
-    "alpha_hacker": 5,
-    "beta_hacker": 3,
-    "gamma_hacker": 1
-  };
-  // Player trust (initially empty)
-  const playerTrust = {};
-
-  // FBI Alert system (basic)
-  let fbiAlertLevel = 0; // 0 = safe, up to 100 = caught
-
-  // AI Servers (randomized)
-  const serverPrefixes = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'omega', 'sigma', 'theta'];
-  const serverTLDs = ['net', 'io', 'sys', 'org', 'com', 'tech'];
-
-  const fakeServers = {};
-
-  function randomInt(min, max) {
-    return Math.floor(Math.random()*(max-min+1))+min;
-  }
-
-  function randomChoice(arr) {
-    return arr[randomInt(0, arr.length-1)];
-  }
-
-  function createRandomServer(id) {
-    const name = `${randomChoice(serverPrefixes)}${id}.${randomChoice(serverTLDs)}`;
-    return {
-      id,
-      name,
-      vulnerable: Math.random() < 0.6,
-      cameraOn: Math.random() < 0.5,
-      hacked: false,
-      alertLevel: 0,      // 0..100 alert level
-      malwareInstalled: false,
-      aiHackerName: randomChoice(Object.keys(hackerRanks)),
-      suspicion: 0,       // 0..100 suspicion of player watching
-      trustLevel: 0,      // 0..5 trust with player
-      messages: [],
-      lastSeenTyping: 0,
+    // Files & hacking data
+    const files = {
+      'readme.txt': 'Welcome',
+      // Player's malware code, scripts, etc can be stored here too
     };
-  }
 
-  // Initialize 8 random servers
-  for(let i=1; i<=8; i++) {
-    fakeServers[i] = createRandomServer(i);
-  }
+    // Fake servers - randomly generated with suspicion and hacked status
+    const fakeServers = {
+      'alpha.net': { vulnerable: true, cameraOn: true, hacked: false, suspiciousLevel: 0 },
+      'beta.sys': { vulnerable: false, cameraOn: false, hacked: false, suspiciousLevel: 0 },
+      'gamma.io': { vulnerable: true, cameraOn: false, hacked: false, suspiciousLevel: 0 },
+      'nylserver': { vulnerable: false, cameraOn: false, hacked: false, suspiciousLevel: 0, isDevServer: true },
+    };
 
-  // === Terminal helpers ===
-  function scrollBottom() {
-    setTimeout(() => term.scrollToBottom(), 0);
-  }
+    // Player gangs data
+    const gangs = {};
+    let playerGang = null;
 
-  function prompt() {
-    term.write('\r\n' + PROMPT);
-    scrollBottom();
-  }
+    // Contacts (for phone)
+    const contacts = new Map(); // name => { lastMsgTime, trustedLevel }
 
-  function print(text = '') {
-    term.writeln(text);
-    scrollBottom();
-  }
+    // Black Market hacked data store
+    const blackMarketData = [];
 
-  function listFiles() {
-    const names = Object.keys(files);
-    print(names.length ? names.join('  ') : '(no files)');
-  }
+    // UI elements
+    const tabButtons = {
+      terminal: document.getElementById('terminal-tab-btn'),
+      cams: document.getElementById('cams-tab-btn'),
+      phone: document.getElementById('phone-tab-btn'),
+      gangs: document.getElementById('gangs-tab-btn'),
+      blackmarket: document.getElementById('blackmarket-tab-btn'),
+    };
 
-  function catFile(filename) {
-    print(filename in files ? files[filename] : `cat: no such file: ${filename}`);
-  }
+    const tabs = {
+      terminal: document.getElementById('terminal-tab'),
+      cams: document.getElementById('cams-tab'),
+      phone: document.getElementById('phone-tab'),
+      gangs: document.getElementById('gangs-tab'),
+      blackmarket: document.getElementById('blackmarket-tab'),
+    };
 
-  function editFile(filename) {
-    print(`Editing ${filename}. End with '.' on a line.`);
-    mode = "edit";
-    currentEditLines = [];
-    currentEditFile = filename;
-    term.write('\r\n> ');
-  }
-
-  // Scripting interpreter for malware & scripts
-  function runScript(scriptText, onFinish) {
-    const interpreter = new Interpreter(scriptText, function(interpreter, globalObject) {
-      // print(text)
-      interpreter.setProperty(globalObject, 'print',
-        interpreter.createNativeFunction(function(text) {
-          print(String(text));
-        })
-      );
-
-      // scan()
-      interpreter.setProperty(globalObject, 'scan',
-        interpreter.createNativeFunction(function() {
-          return Object.values(fakeServers).map(s => s.name).join('\n');
-        })
-      );
-
-      // probe(serverName)
-      interpreter.setProperty(globalObject, 'probe',
-        interpreter.createNativeFunction(function(serverName) {
-          const s = Object.values(fakeServers).find(srv => srv.name === String(serverName));
-          if (!s) return 'UNKNOWN HOST';
-          return s.vulnerable ? 'VULNERABLE' : 'SECURE';
-        })
-      );
-
-      // cameraStatus(serverName)
-      interpreter.setProperty(globalObject, 'cameraStatus',
-        interpreter.createNativeFunction(function(serverName) {
-          const s = Object.values(fakeServers).find(srv => srv.name === String(serverName));
-          if (!s) return 'UNKNOWN HOST';
-          return s.cameraOn ? 'ONLINE' : 'OFFLINE';
-        })
-      );
-
-      // hack(serverName)
-      interpreter.setProperty(globalObject, 'hack',
-        interpreter.createNativeFunction(function(serverName) {
-          const s = Object.values(fakeServers).find(srv => srv.name === String(serverName));
-          if (!s) return 'FAIL: NO HOST';
-          if (s.hacked) return 'ALREADY HACKED';
-          if (!s.vulnerable) return 'FAIL: SECURE';
-          if (s.cameraOn) return 'FAIL: CAMERAS ONLINE';
-          s.hacked = true;
-          print(`SUCCESS: ${s.name} BREACHED`);
-          return 'SUCCESS';
-        })
-      );
-
-      // installMalware(serverName)
-      interpreter.setProperty(globalObject, 'installMalware',
-        interpreter.createNativeFunction(function(serverName) {
-          const s = Object.values(fakeServers).find(srv => srv.name === String(serverName));
-          if (!s) return 'FAIL: NO HOST';
-          if (!s.hacked) return 'FAIL: NOT HACKED';
-          s.malwareInstalled = true;
-          print(`Malware installed on ${s.name}`);
-          return 'SUCCESS';
-        })
-      );
-
-      // getAlertLevel(serverName)
-      interpreter.setProperty(globalObject, 'getAlertLevel',
-        interpreter.createNativeFunction(function(serverName) {
-          const s = Object.values(fakeServers).find(srv => srv.name === String(serverName));
-          if (!s) return -1;
-          return s.alertLevel;
-        })
-      );
-
-      // increaseAlert(serverName, amount)
-      interpreter.setProperty(globalObject, 'increaseAlert',
-        interpreter.createNativeFunction(function(serverName, amount) {
-          const s = Object.values(fakeServers).find(srv => srv.name === String(serverName));
-          if (!s) return false;
-          s.alertLevel = Math.min(100, s.alertLevel + amount);
-          return true;
-        })
-      );
-
-    });
-
-    function runStep() {
-      try {
-        if (interpreter.step()) {
-          setTimeout(runStep, 0);
+    function switchTab(name) {
+      for (const t in tabs) {
+        if (t === name) {
+          tabs[t].style.display = 'block';
+          tabButtons[t].classList.add('active');
+          if (t === 'terminal') term.focus();
         } else {
-          print('Script finished.');
-          if(onFinish) onFinish();
-          prompt();
+          tabs[t].style.display = 'none';
+          tabButtons[t].classList.remove('active');
         }
-      } catch (err) {
-        print('Script Error: ' + err.message);
-        if(onFinish) onFinish();
-        prompt();
       }
     }
 
-    runStep();
-  }
+    for (const t in tabButtons) {
+      tabButtons[t].addEventListener('click', () => switchTab(t));
+    }
 
-  // Terminal commands
-  function runFile(filename) {
-    if (!(filename in files)) {
-      print(`run: no such file: ${filename}`);
+    // FBI suspicion UI
+    const fbiStatusEl = document.getElementById('fbi-status');
+    function updateFbiStatus() {
+      fbiStatusEl.textContent = `FBI Suspicion: ${fbiSuspicion}`;
+      if (fbiSuspicion >= suspicionMax) {
+        alert('FBI has found you! Game Over.');
+        location.reload();
+      }
+    }
+
+    // Scroll to bottom helper for various logs
+    function scrollBottom(el) {
+      setTimeout(() => {
+        if (!el) {
+          term.scrollToBottom();
+        } else {
+          el.scrollTop = el.scrollHeight;
+        }
+      }, 0);
+    }
+
+    // Terminal printing & prompt
+    function print(text = '') {
+      term.writeln(text);
+      scrollBottom();
+    }
+    function prompt() {
+      term.write('\r\n' + PROMPT);
+      scrollBottom();
+    }
+
+    // Files management commands
+    function listFiles() {
+      const names = Object.keys(files);
+      print(names.length ? names.join('  ') : '(no files)');
+    }
+    function catFile(filename) {
+      print(filename in files ? files[filename] : `cat: no such file: ${filename}`);
+    }
+    function editFile(filename) {
+      print(`Editing ${filename}. End with '.' on a line.`);
+      mode = "edit";
+      currentEditLines = [];
+      currentEditFile = filename;
+      term.write('> ');
+    }
+    function runFile(filename) {
+      if (!(filename in files)) {
+        print(`No such file: ${filename}`);
+        prompt();
+        return;
+      }
+      print(`Running ${filename}...`);
+      // Simplified interpreter or execution
+      print('(Execution simulation)');
       prompt();
-      return;
     }
-    print(`Running ${filename}...`);
-    runScript(files[filename]);
-  }
 
-  function handleCommand(line) {
-    const parts = line.trim().split(' ');
-    const cmd = parts[0];
-    const arg = parts.slice(1).join(' ');
-
-    switch (cmd) {
-      case 'ls': listFiles(); prompt(); break;
-      case 'cat': catFile(arg); prompt(); break;
-      case 'edit': if (!arg) print('Usage: edit <filename>'); else editFile(arg); break;
-      case 'run': if (!arg) print('Usage: run <filename>'); else runFile(arg); break;
-      case 'help':
-        print(`Commands: ls, cat, edit, run\nIn scripts try: print(), scan(), probe(), cameraStatus(), hack(), installMalware(), getAlertLevel()`);
-        prompt();
-        break;
-      case '':
-        prompt();
-        break;
-      default:
-        print(`Unknown command: ${cmd}`);
-        prompt();
+    // Servers tab update
+    const serversListEl = document.getElementById('servers-list');
+    function updateServersList() {
+      let text = 'SERVER NAME     | VULNERABLE | CAMERAS  | HACKED   | SUSPICION\n';
+      text += '--------------------------------------------------------------\n';
+      for (const [name, s] of Object.entries(fakeServers)) {
+        const vul = s.vulnerable ? 'YES' : 'NO ';
+        const cam = s.cameraOn ? 'ON ' : 'OFF';
+        const hack = s.hacked ? 'YES' : 'NO ';
+        const susp = s.suspiciousLevel.toString().padStart(3, ' ');
+        text += `${name.padEnd(15)} | ${vul}       | ${cam}     | ${hack}    | ${susp}\n`;
+      }
+      serversListEl.textContent = text;
     }
-  }
 
-  // Terminal input handling
-  term.onKey(e => {
-    const ev = e.domEvent;
-    const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
-
-    if (ev.key === 'Enter') {
-      term.write('\r\n');
-      if (mode === "command") {
-        handleCommand(commandBuffer.trim());
-        commandBuffer = '';
-      } else if (mode === "edit") {
-        const line = commandBuffer.trimEnd();
-        commandBuffer = '';
-        if (line === '.') {
-          files[currentEditFile] = currentEditLines.join('\n');
-          print(`Saved ${currentEditFile}`);
-          mode = "command";
-          currentEditFile = "";
-          currentEditLines = [];
-          prompt();
-        } else {
-          currentEditLines.push(line);
-          term.write('> ');
+    // Suspicion and hacking simulation
+    function simulateSuspicion() {
+      for (const s of Object.values(fakeServers)) {
+        if (s.hacked && s.suspiciousLevel < 100) {
+          s.suspiciousLevel += 2; // grow suspicion faster
+          if (s.suspiciousLevel >= 50) {
+            fbiSuspicion += 2;
+            updateFbiStatus();
+            // Chance hackers notify player in phone chat if phone tab is active
+            if (tabs.phone.style.display === 'block') {
+              receiveChatMessage(randomHackerName(), `Warning: Suspicious activity detected on ${Object.keys(fakeServers).find(k => fakeServers[k] === s)}`);
+            }
+          }
         }
       }
-    } else if (ev.key === 'Backspace') {
-      if (commandBuffer.length > 0) {
-        commandBuffer = commandBuffer.slice(0, -1);
-        term.write('\b \b');
-      }
-    } else if (printable) {
-      commandBuffer += ev.key;
-      term.write(ev.key);
+      updateServersList();
+      setTimeout(simulateSuspicion, 6000);
     }
-  });
 
-  // Show welcome text
-  print(files['readme.txt']);
-  prompt();
-
-  // === Tabs switching logic ===
-  const tabs = document.querySelectorAll('#tabs button');
-  const tabContents = document.querySelectorAll('.tab-content');
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      const selected = tab.getAttribute('data-tab');
-      tabContents.forEach(tc => {
-        tc.classList.remove('active');
-        if(tc.id === selected + '-container' || tc.id === selected + '-list' || tc.id === selected + '-feed' || tc.id === selected + '-tab' || tc.id === selected + '-editor') {
-          tc.classList.add('active');
-        }
-      });
-      // Special IDs in this code:
-      // terminal-container, servers-list, cams-feed, phone-tab, malware-editor
-      // So match these accordingly:
-      // Map tab name to content id
-      const map = {
-        terminal: 'terminal-container',
-        servers: 'servers-list',
-        cams: 'cams-feed',
-        phone: 'phone-tab',
-        malware: 'malware-editor'
-      };
-      for(let key in map) {
-        document.getElementById(map[key]).classList.remove('active');
-      }
-      document.getElementById(map[selected]).classList.add('active');
-    });
-  });
-
-  // === Servers tab: show servers with live info ===
-  const serversListElem = document.getElementById('servers-list');
-  function renderServers() {
-    let text = '';
-    for (const s of Object.values(fakeServers)) {
-      text += `${s.name.padEnd(18)} | Vulnerable: ${s.vulnerable ? 'YES' : 'NO '} | Camera: ${s.cameraOn ? 'ON ' : 'OFF'} | Hacked: ${s.hacked ? 'YES' : 'NO '} | Alert: ${s.alertLevel.toString().padStart(3)} | Suspicion: ${s.suspicion.toString().padStart(3)}\n`;
+    // Chat system (phone tab)
+    const chatLog = document.getElementById('chat-log');
+    const chatInput = document.getElementById('chat-input');
+    function randomHackerName() {
+      const names = ['ShadowFox', 'ZeroDay', 'Cryptic', 'Phantom', 'Glitch', 'NightCrawler', 'Hex', 'Echo', 'Cipher', 'RogueAI'];
+      return names[Math.floor(Math.random() * names.length)];
     }
-    serversListElem.textContent = text;
-  }
 
-  setInterval(() => {
-    // Simulate AI hacker behavior
-    for (const s of Object.values(fakeServers)) {
-      // If hacked & malware installed, alert level goes up slowly
-      if (s.hacked && s.malwareInstalled) {
-        s.alertLevel = Math.min(100, s.alertLevel + 1);
-      }
-      // Suspicion decays slowly if not observed
-      s.suspicion = Math.max(0, s.suspicion - 0.5);
+    function appendChatMessage(sender, msg) {
+      const messageEl = document.createElement('div');
+      messageEl.textContent = `[${sender}] ${msg}`;
+      chatLog.appendChild(messageEl);
+      scrollBottom(chatLog);
     }
-    renderServers();
-  }, 1000);
 
-  // === Cameras tab: show fake live feeds ===
-  const camsFeedElem = document.getElementById('cams-feed');
-  function renderCams() {
-    let text = '';
-    for (const s of Object.values(fakeServers)) {
-      if (s.hacked && s.cameraOn) {
-        text += `=== Camera Feed: ${s.name} ===\n`;
-        // Fake "live" feed, random ASCII art or text
-        text += generateFakeCameraFeed(s);
-        text += '\n\n';
-      }
+    function receiveChatMessage(sender, msg) {
+      appendChatMessage(sender, msg);
     }
-    camsFeedElem.textContent = text || 'No active camera feeds. Hack a server with cameras online to view feeds.';
-  }
-  function generateFakeCameraFeed(server) {
-    // Simple simulation of camera feed as ASCII boxes with flickering
-    const frames = [
-      '[██████████████]',
-      '[▓▓▓▓▓▓▓▓▓▓▓▓▓▓]',
-      '[▒▒▒▒▒▒▒▒▒▒▒▒▒▒]',
-      '[░░░░░░░░░░░░░░]',
-      '[■■■■■■■■■■■■■■]'
-    ];
-    const randomFrame = frames[randomInt(0, frames.length - 1)];
-    return randomFrame + `\nStatus: ${server.alertLevel < 50 ? 'Normal' : 'ALERT!'}`;
-  }
-  setInterval(renderCams, 2000);
 
-  // === Phone tab: simple messaging ===
-  const phoneMessagesElem = document.getElementById('phone-messages');
-  const phoneInputElem = document.getElementById('phone-input');
-  const phoneMessages = [];
+    chatInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const msg = chatInput.value.trim();
+        if (!msg) return;
+        appendChatMessage('You', msg);
+        chatInput.value = '';
 
-  function renderPhoneMessages() {
-    phoneMessagesElem.textContent = phoneMessages.join('\n');
-    phoneMessagesElem.scrollTop = phoneMessagesElem.scrollHeight;
-  }
-  phoneInputElem.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const msg = phoneInputElem.value.trim();
-      if (msg) {
-        phoneMessages.push(`[You]: ${msg}`);
-        // Fake reply from AI hacker
+        // Simple AI response simulation with some logic
         setTimeout(() => {
-          phoneMessages.push(`[Hacker AI]: Roger that.`);
-          renderPhoneMessages();
-        }, 1000);
-        renderPhoneMessages();
-        phoneInputElem.value = '';
+          let response = 'Roger that.';
+          if (msg.toLowerCase().includes('hack')) {
+            response = "Careful, FBI's eyes are everywhere.";
+          } else if (msg.toLowerCase().includes('rat')) {
+            fbiSuspicion += 7;
+            updateFbiStatus();
+            response = "Snitches get caught. Watch your back.";
+          } else if (msg.toLowerCase().includes('sell')) {
+            response = "Good deal. But watch your wallet.";
+          } else if (msg.toLowerCase().includes('fbi')) {
+            response = "FBI interference? I can help.";
+          }
+          receiveChatMessage(randomHackerName(), response);
+        }, 1800);
+      }
+    });
+
+    // Gangs tab functionality
+    const gangsListEl = document.getElementById('gangs-list');
+    const newGangNameInput = document.getElementById('new-gang-name');
+    const joinGangBtn = document.getElementById('join-gang-btn');
+    const leaveGangBtn = document.getElementById('leave-gang-btn');
+
+    function updateGangUI() {
+      gangsListEl.innerHTML = '';
+      if (!playerGang) {
+        gangsListEl.innerHTML = '<li>You are not in any gang.</li>';
+        leaveGangBtn.disabled = true;
+        return;
+      }
+      leaveGangBtn.disabled = false;
+      const members = gangs[playerGang];
+      for (const m of members) {
+        const li = document.createElement('li');
+        li.textContent = m === 'You' ? `${m} (You)` : m;
+        gangsListEl.appendChild(li);
       }
     }
-  });
 
-  // === Malware editor: run malware code ===
-  const malwareTextarea = document.getElementById('malware-textarea');
-  const runMalwareBtn = document.getElementById('run-malware-btn');
+    joinGangBtn.onclick = () => {
+      const gangName = newGangNameInput.value.trim();
+      if (!gangName) {
+        alert('Enter a gang name.');
+        return;
+      }
+      if (!gangs[gangName]) gangs[gangName] = [];
+      if (playerGang) {
+        alert(`You are already in gang: ${playerGang}. Leave first.`);
+        return;
+      }
+      gangs[gangName].push('You');
+      playerGang = gangName;
+      showAchievement(`Joined gang "${gangName}"`);
+      updateGangUI();
+      newGangNameInput.value = '';
+    };
 
-  runMalwareBtn.addEventListener('click', () => {
-    const code = malwareTextarea.value;
-    print('\n[Running malware script...]');
-    runScript(code);
-  });
+    leaveGangBtn.onclick = () => {
+      if (!playerGang) return;
+      const members = gangs[playerGang];
+      const idx = members.indexOf('You');
+      if (idx !== -1) members.splice(idx, 1);
+      if (members.length === 0) delete gangs[playerGang];
+      showAchievement(`Left gang "${playerGang}"`);
+      playerGang = null;
+      updateGangUI();
+    };
 
-  // === Simple trust & FBI alert update simulation ===
-  setInterval(() => {
-    // FBI alert rises slowly if alertLevel on any server > 70
-    let maxAlert = 0;
-    for (const s of Object.values(fakeServers)) {
-      if (s.alertLevel > maxAlert) maxAlert = s.alertLevel;
+    updateGangUI();
+
+    // Black Market tab functionality
+    const blackmarketListEl = document.getElementById('blackmarket-list');
+    const blackmarketSelect = document.getElementById('blackmarket-select');
+    const sellAllBtn = document.getElementById('sell-all-btn');
+    const sellSomeBtn = document.getElementById('sell-some-btn');
+    const blackmarketStatus = document.getElementById('blackmarket-status');
+    const walletAmountEl = document.getElementById('wallet-amount');
+
+    function updateWallet(amountChange) {
+      wallet += amountChange;
+      walletAmountEl.textContent = wallet.toFixed(2);
     }
-    if (maxAlert > 70) {
-      fbiAlertLevel = Math.min(100, fbiAlertLevel + 2);
-    } else {
-      fbiAlertLevel = Math.max(0, fbiAlertLevel - 1);
-    }
-    // Show FBI alert in terminal (just once every 10 seconds)
-    if (Math.random() < 0.1) {
-      print(`FBI Alert Level: ${fbiAlertLevel}`);
-      prompt();
-    }
-  }, 5000);
 
-</script>
+    function refreshBlackMarket() {
+      blackmarketSelect.innerHTML = '';
+      if (blackMarketData.length === 0) {
+        blackmarketListEl.textContent = 'No hacked data to sell.';
+        sellAllBtn.disabled = true;
+        sellSomeBtn.disabled = true;
+        return;
+      }
+      blackmarketListEl.textContent = '';
+      for (let i = 0; i < blackMarketData.length; i++) {
+        const item = blackMarketData[i];
+        blackmarketListEl.textContent += `${i+1}. [${item.server}] ${item.info.substring(0, 50)}${item.info.length > 50 ? '...' : ''}\n`;
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = `[${item.server}] ${item.info.substring(0, 60)}${item.info.length > 60 ? '...' : ''}`;
+        blackmarketSelect.appendChild(option);
+      }
+      sellAllBtn.disabled = false;
+      sellSomeBtn.disabled = blackmarketSelect.selectedOptions.length === 0;
+    }
 
+    sellAllBtn.onclick = () => {
+      if (blackMarketData.length === 0) return;
+      const payout = blackMarketData.length * 100 + Math.floor(Math.random()*100);
+      updateWallet(payout);
+      blackMarketData.length = 0;
+      blackmarketStatus.textContent = `Sold all data for $${payout.toFixed(2)}. FBI suspicion reduced.`;
+      fbiSuspicion = Math.max(0, fbiSuspicion - 20);
+      updateFbiStatus();
+      refreshBlackMarket();
+      updateServersList();
+      showAchievement('Black Market Deal: Sold All Data');
+    };
+
+    sellSomeBtn.onclick = () => {
+      if (blackmarketSelect.selectedOptions.length === 0) return;
+      let payout = 0;
+      // Collect indexes to remove
+      const indexes = [];
+      for (const option of blackmarketSelect.selectedOptions) {
+        const idx = parseInt(option.value);
+        payout += 100 + Math.floor(Math.random() * 100);
+        indexes.push(idx);
+      }
+      // Remove selected items in descending order to avoid splice issues
+      indexes.sort((a,b) => b - a);
+      for (const idx of indexes) blackMarketData.splice(idx, 1);
+      updateWallet(payout);
+      blackmarketStatus.textContent = `Sold selected data for $${payout.toFixed(2)}. FBI suspicion reduced.`;
+      fbiSuspicion = Math.max(0, fbiSuspicion - 10 * indexes.length);
+      updateFbiStatus();
+      refreshBlackMarket();
+      updateServersList();
+      showAchievement('Black Market Deal: Sold Selected Data');
+    };
+
+    blackmarketSelect.addEventListener('change', () => {
+      sellSomeBtn.disabled = blackmarketSelect.selectedOptions.length === 0;
+    });
+
+    // Add hacked server data to black market when hacked
+    function addHackedDataToBlackMarket(serverName) {
+      if (!fakeServers[serverName]) return;
+      const s = fakeServers[serverName];
+      if (!s.hacked) return;
+      // Avoid duplicates
+      if (blackMarketData.some(d => d.server === serverName)) return;
+      blackMarketData.push({
+        server: serverName,
+        info: `Confidential data from ${serverName}. Possible access keys and internal logs.`
+      });
+      refreshBlackMarket();
+      showAchievement(`Hacked data added for sale: ${serverName}`);
+    }
+
+    // Terminal input handling
+    let currentInput = '';
+    term.focus();
+
+    term.onKey(e => {
+      const ev = e.domEvent;
+      if (ev.key === 'Enter') {
+        term.write('\r\n');
+        if (mode === "command") {
+          handleCommand(currentInput.trim());
+          currentInput = '';
+        } else if (mode === "edit") {
+          const line = currentInput.trimEnd();
+          currentInput = '';
+          if (line === '.') {
+            files[currentEditFile] = currentEditLines.join('\n');
+            print(`Saved ${currentEditFile}`);
+            mode = "command";
+            currentEditFile = "";
+            currentEditLines = [];
+            prompt();
+          } else {
+            currentEditLines.push(line);
+            term.write('> ');
+          }
+        }
+      } else if (ev.key === 'Backspace') {
+        if (currentInput.length > 0) {
+          currentInput = currentInput.slice(0, -1);
+          term.write('\b \b');
+        }
+      } else if (ev.key.length === 1 && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+        currentInput += ev.key;
+        term.write(ev.key);
+      }
+      scrollBottom();
+    });
+
+    // Command handler
+    function handleCommand(line) {
+      if (!line) {
+        prompt();
+        return;
+      }
+      const parts = line.split(' ');
+      const cmd = parts[0].toLowerCase();
+      const arg = parts.slice(1).join(' ').toLowerCase();
+
+      switch (cmd) {
+        case 'ls':
+          listFiles();
+          prompt();
+          break;
+        case 'cat':
+          if (!arg) print('Usage: cat <filename>');
+          else catFile(arg);
+          prompt();
+          break;
+        case 'edit':
+          if (!arg) {
+            print('Usage: edit <filename>');
+            prompt();
+          } else editFile(arg);
+          break;
+        case 'run':
+          if (!arg) {
+            print('Usage: run <filename>');
+            prompt();
+          } else runFile(arg);
+          break;
+        case 'scan':
+          print('Scanning for networks...');
+          setTimeout(() => {
+            print('Networks found:');
+            for (const s in fakeServers) {
+              print(`- ${s}`);
+            }
+            prompt();
+          }, 1000);
+          break;
+        case 'hack':
+          if (!arg) {
+            print('Usage: hack <server>');
+            prompt();
+            break;
+          }
+          if (!fakeServers[arg]) {
+            print(`No such server: ${arg}`);
+            prompt();
+            break;
+          }
+          if (fakeServers[arg].isDevServer) {
+            print('Access denied. Cannot hack this server.');
+            prompt();
+            break;
+          }
+          const server = fakeServers[arg];
+          if (server.cameraOn) {
+            print('FAIL: CAMERAS ONLINE - Cannot hack while cameras active.');
+            prompt();
+            break;
+          }
+          if (server.hacked) {
+            print('Already hacked.');
+            prompt();
+            break;
+          }
+          if (!server.vulnerable) {
+            print('Fail: server secure.');
+            prompt();
+            break;
+          }
+          server.hacked = true;
+          print(`Success: hacked ${arg}!`);
+          server.suspiciousLevel += 10;
+          fbiSuspicion += 3;
+          updateFbiStatus();
+          addHackedDataToBlackMarket(arg);
+          prompt();
+          break;
+        case 'help':
+          print('Available commands: ls, cat, edit, run, scan, hack');
+          prompt();
+          break;
+        default:
+          print(`Unknown command: ${cmd}`);
+          prompt();
+      }
+    }
+
+    // Start everything
+    print('Welcome');
+    prompt();
+    updateServersList();
+    simulateSuspicion();
+
+  </script>
 </body>
 </html>
