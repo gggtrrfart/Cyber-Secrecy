@@ -26,18 +26,19 @@
 
 <script>
   const { Terminal } = window;
-  const term = new Terminal({
+const term = new Terminal({
   cursorBlink: true,
   scrollback: 5000,
   fontSize: 14,
+  disableStdin: false, // we handle input manually
   fontFamily: '"Consolas", "Courier New", monospace',
   theme: {
     background: '#0a0a0a',
     foreground: '#00ff00',
     cursor: '#00ff00',
     selectionBackground: 'rgba(0, 255, 0, 0.3)'
-    }
-  });
+  }
+});
 
   term.open(document.getElementById('terminal-container'));
 
